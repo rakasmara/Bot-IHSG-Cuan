@@ -37,8 +37,15 @@ import time
 import os
 import warnings
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 warnings.filterwarnings("ignore")   # supaya FutureWarning yfinance tidak memenuhi layar
+
+WIB = ZoneInfo("Asia/Jakarta")
+
+def waktu_wib():
+    """Waktu sekarang dalam WIB, terlepas dari timezone server (GitHub Actions pakai UTC)"""
+    return datetime.now(ZoneInfo("UTC")).astimezone(WIB)
 
 # ============================================================
 # 1. KONFIGURASI - WAJIB DIISI
@@ -260,7 +267,7 @@ def run_full_scan():
     momentum_alert = df_hasil[df_hasil["Volume_Alert"] | df_hasil["Chart_Naik_Signifikan"]]
 
     print(f"\n{'='*80}")
-    print(f"HASIL FULL SCAN - {datetime.now().strftime('%Y-%m-%d %H:%M')}")
+    print(f"HASIL FULL SCAN - {waktu_wib().strftime('%Y-%m-%d %H:%M')}")
     print(f"{'='*80}")
     print(f"Total saham dianalisis: {len(df_hasil)}")
     print(f"Saham confluence >= {MIN_SKOR_ALERT}: {len(confluence_kuat)}")
@@ -270,7 +277,7 @@ def run_full_scan():
         print(confluence_kuat[["Ticker", "Harga", "Skor", "Keterangan"]].to_string(index=False))
 
     # ---- Susun pesan Telegram ----
-    pesan = f"<b>SCAN IHSG - {datetime.now().strftime('%d %b %Y %H:%M')}</b>\n\n"
+    pesan = f"<b>SCAN IHSG - {waktu_wib().strftime('%d %b %Y %H:%M')}</b>\n\n"
 
     if not confluence_kuat.empty:
         pesan += "<b>Confluence Kuat (2-3 indikator sejalan):</b>\n"
@@ -289,7 +296,7 @@ def run_full_scan():
 
     kirim_telegram(pesan)
 
-    filename = f"full_scan_{datetime.now().strftime('%Y%m%d_%H%M')}.csv"
+    filename = f"full_scan_{waktu_wib().strftime('%Y%m%d_%H%M')}.csv"
     df_hasil.to_csv(filename, index=False)
     print(f"\nHasil lengkap disimpan ke: {filename}")
 
