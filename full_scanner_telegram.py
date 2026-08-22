@@ -36,16 +36,14 @@ import requests
 import time
 import os
 import warnings
-from datetime import datetime
-from zoneinfo import ZoneInfo
+from datetime import datetime, timedelta, timezone
 
 warnings.filterwarnings("ignore")   # supaya FutureWarning yfinance tidak memenuhi layar
 
-WIB = ZoneInfo("Asia/Jakarta")
-
 def waktu_wib():
-    """Waktu sekarang dalam WIB, terlepas dari timezone server (GitHub Actions pakai UTC)"""
-    return datetime.now(ZoneInfo("UTC")).astimezone(WIB)
+    """Waktu WIB (UTC+7), dihitung manual dari UTC - tidak bergantung pada
+    database timezone sistem (lebih aman untuk server seperti GitHub Actions)"""
+    return datetime.now(timezone.utc) + timedelta(hours=7)
 
 # ============================================================
 # 1. KONFIGURASI - WAJIB DIISI
