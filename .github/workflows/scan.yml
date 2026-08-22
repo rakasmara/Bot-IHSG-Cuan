@@ -1,0 +1,29 @@
+name: Scan IHSG Otomatis
+
+on:
+  schedule:
+    # Jam bursa IHSG: 09:00-16:15 WIB = 02:00-09:15 UTC
+    # Jalan setiap 30 menit, Senin-Jumat, dari 02:00 sampai 09:00 UTC
+    - cron: '0,30 2-8 * * 1-5'
+  workflow_dispatch:   # supaya bisa di-trigger manual untuk testing
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install yfinance pandas numpy requests openpyxl
+
+      - name: Jalankan scanner
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python full_scanner_telegram.py
