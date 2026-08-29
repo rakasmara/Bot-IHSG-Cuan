@@ -78,6 +78,14 @@ BB_PERIOD, BB_STD = 20, 2
 BB_LOWER_THRESHOLD_PCT = 1.0
 VOL_SPIKE_MULTIPLIER = 3.0
 VOL_LOOKBACK = 20
+
+# --- DETEKSI DINI (baru) ---
+# Menangkap saham yang volume-nya melonjak TAPI harga belum bergerak jauh -
+# indikasi akumulasi awal, sebelum breakout harga terjadi (bukan setelah telat)
+EARLY_VOL_MULTIPLIER = 2.5      # volume naik minimal 2.5x rata-rata
+EARLY_MAX_KENAIKAN_PCT = 8      # tapi harga masih naik di bawah 8% (belum "telat")
+EARLY_MIN_KENAIKAN_PCT = -5     # dan tidak sedang jatuh tajam (turun lebih dari 5%)
+
 MIN_SKOR_ALERT = 2       # minimal berapa indikator sejalan supaya masuk alert
 LOOKBACK_DAYS = "6mo"
 JEDA_ANTAR_REQUEST = 0.3  # detik, supaya tidak kena rate-limit yfinance
@@ -189,6 +197,14 @@ def analyze_ticker(ticker):
         kenaikan_5hari_pct = ((latest["Close"] - harga_5hari_lalu) / harga_5hari_lalu) * 100
         chart_naik_signifikan = kenaikan_5hari_pct >= 15   # naik >=15% dalam 5 hari dianggap signifikan
 
+        # --- Deteksi Dini: volume melonjak TAPI harga belum bergerak jauh ---
+        # Beda dari volume_alert/chart_naik_signifikan di atas yang menangkap
+        # saham yang SUDAH naik tinggi - ini menangkap sebelum itu terjadi
+        deteksi_dini = (
+            vol_ratio >= EARLY_VOL_MULTIPLIER
+            and EARLY_MIN_KENAIKAN_PCT <= kenaikan_5hari_pct <= EARLY_MAX_KENAIKAN_PCT
+        )
+
         skor = sum([stoch_golden_cross, supertrend_bullish, di_lower_band])
 
         keterangan = []
@@ -204,6 +220,8 @@ def analyze_ticker(ticker):
             keterangan.append(f"VOLUME SPIKE {vol_ratio:.1f}x")
         if chart_naik_signifikan:
             keterangan.append(f"Harga naik {kenaikan_5hari_pct:.0f}% (5 hari)")
+        if deteksi_dini:
+            keterangan.append(f"🔍 DETEKSI DINI: vol {vol_ratio:.1f}x, harga baru {kenaikan_5hari_pct:+.1f}%")
 
         return {
             "Ticker": ticker.replace(".JK", ""),
@@ -213,6 +231,7 @@ def analyze_ticker(ticker):
             "Kenaikan_5hari_%": round(kenaikan_5hari_pct, 1),
             "Volume_Alert": volume_alert,
             "Chart_Naik_Signifikan": chart_naik_signifikan,
+            "Deteksi_Dini": deteksi_dini,
             "Keterangan": " | ".join(keterangan) if keterangan else "-",
         }
     except Exception:
@@ -264,12 +283,16 @@ def run_full_scan():
     # Saham dengan volume alert ATAU chart naik signifikan (terlepas dari skor confluence)
     momentum_alert = df_hasil[df_hasil["Volume_Alert"] | df_hasil["Chart_Naik_Signifikan"]]
 
+    # Saham Deteksi Dini: volume melonjak, harga BELUM bergerak jauh (early stage)
+    deteksi_dini_alert = df_hasil[df_hasil["Deteksi_Dini"]].sort_values("Vol_ratio", ascending=False)
+
     print(f"\n{'='*80}")
     print(f"HASIL FULL SCAN - {waktu_wib().strftime('%Y-%m-%d %H:%M')}")
     print(f"{'='*80}")
     print(f"Total saham dianalisis: {len(df_hasil)}")
     print(f"Saham confluence >= {MIN_SKOR_ALERT}: {len(confluence_kuat)}")
-    print(f"Saham momentum/volume alert: {len(momentum_alert)}\n")
+    print(f"Saham momentum/volume alert: {len(momentum_alert)}")
+    print(f"Saham deteksi dini: {len(deteksi_dini_alert)}\n")
 
     if not confluence_kuat.empty:
         print(confluence_kuat[["Ticker", "Harga", "Skor", "Keterangan"]].to_string(index=False))
@@ -284,12 +307,21 @@ def run_full_scan():
         pesan += "\n"
 
     if not momentum_alert.empty:
-        pesan += "<b>⚠ Volume/Momentum Alert:</b>\n"
+        pesan += "<b>⚠ Volume/Momentum Alert (sudah bergerak):</b>\n"
         for _, row in momentum_alert.head(10).iterrows():
             pesan += f"• {row['Ticker']} (Rp{row['Harga']:.0f}) - Vol {row['Vol_ratio']:.1f}x, naik {row['Kenaikan_5hari_%']:.0f}% (5hr)\n"
-        pesan += "\n<i>Ingat: volume spike bisa breakout ATAU distribusi. Cek berita & pakai cut-loss.</i>"
+        pesan += "\n"
 
-    if confluence_kuat.empty and momentum_alert.empty:
+    if not deteksi_dini_alert.empty:
+        pesan += "<b>🔍 Deteksi Dini (volume naik, harga BELUM bergerak jauh):</b>\n"
+        for _, row in deteksi_dini_alert.head(10).iterrows():
+            pesan += f"• {row['Ticker']} (Rp{row['Harga']:.0f}) - Vol {row['Vol_ratio']:.1f}x, baru {row['Kenaikan_5hari_%']:+.1f}% (5hr)\n"
+        pesan += "\n<i>Sinyal lebih awal, tapi juga lebih tidak pasti - selalu cek berita/katalis dulu.</i>\n\n"
+
+    if not momentum_alert.empty or not deteksi_dini_alert.empty:
+        pesan += "<i>Ingat: volume spike bisa breakout ATAU distribusi. Cek berita & pakai cut-loss.</i>"
+
+    if confluence_kuat.empty and momentum_alert.empty and deteksi_dini_alert.empty:
         pesan += "Tidak ada sinyal signifikan hari ini."
 
     kirim_telegram(pesan)
