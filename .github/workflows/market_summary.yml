@@ -1,0 +1,25 @@
+name: Market Summary IHSG
+
+on:
+  workflow_dispatch:   # dipicu oleh cron-job.org via GitHub API, jadwal jam 18:00 WIB
+
+jobs:
+  summary:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install yfinance pandas requests
+
+      - name: Kirim market summary
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python market_summary_telegram.py
