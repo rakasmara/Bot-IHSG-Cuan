@@ -1,11 +1,13 @@
 name: Scan IHSG Otomatis
 
 on:
-  schedule:
-    # Jam bursa IHSG: 09:00-16:15 WIB = 02:00-09:15 UTC
-    # Jalan setiap 30 menit, Senin-Jumat, dari 02:00 sampai 09:00 UTC
-    - cron: '0,30 2-8 * * 1-5'
-  workflow_dispatch:   # supaya bisa di-trigger manual untuk testing
+  # Jadwal cron bawaan GitHub DINONAKTIFKAN - sudah terbukti tidak presisi
+  # (kadang di-skip, kadang telat berjam-jam). Diganti dengan cron-job.org
+  # yang memicu lewat 'workflow_dispatch' di bawah ini dengan jauh lebih akurat.
+  #
+  # schedule:
+  #   - cron: '0,30 2-8 * * 1-5'
+  workflow_dispatch:   # dipicu oleh cron-job.org via GitHub API
 
 jobs:
   scan:
