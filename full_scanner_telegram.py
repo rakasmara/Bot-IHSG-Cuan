@@ -280,11 +280,23 @@ def kirim_telegram(pesan):
         print("[INFO] Telegram belum dikonfigurasi, alert hanya ditampilkan di sini:\n")
         print(pesan)
         return
-    try:
-        url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
-        requests.post(url, data={"chat_id": TELEGRAM_CHAT_ID, "text": pesan, "parse_mode": "HTML"})
-    except Exception as e:
-        print(f"Gagal kirim Telegram: {e}")
+
+    # Telegram membatasi maksimal 4096 karakter per pesan - potong jadi
+    # beberapa bagian kalau kepanjangan, supaya tidak gagal kirim total
+    BATAS_KARAKTER = 4000  # kasih sedikit margin dari batas resmi 4096
+    potongan = [pesan[i:i + BATAS_KARAKTER] for i in range(0, len(pesan), BATAS_KARAKTER)] or [pesan]
+
+    for i, bagian in enumerate(potongan):
+        try:
+            url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
+            resp = requests.post(url, data={"chat_id": TELEGRAM_CHAT_ID, "text": bagian, "parse_mode": "HTML"}, timeout=15)
+            if resp.status_code != 200:
+                print(f"[ERROR] Gagal kirim Telegram (bagian {i+1}/{len(potongan)}): "
+                      f"status {resp.status_code} - {resp.text}")
+            else:
+                print(f"[OK] Pesan Telegram bagian {i+1}/{len(potongan)} terkirim.")
+        except Exception as e:
+            print(f"[ERROR] Exception saat kirim Telegram (bagian {i+1}/{len(potongan)}): {e}")
 
 
 # ============================================================
