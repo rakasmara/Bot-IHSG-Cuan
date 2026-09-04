@@ -86,6 +86,12 @@ EARLY_VOL_MULTIPLIER = 2.5      # volume naik minimal 2.5x rata-rata
 EARLY_MAX_KENAIKAN_PCT = 8      # tapi harga masih naik di bawah 8% (belum "telat")
 EARLY_MIN_KENAIKAN_PCT = -5     # dan tidak sedang jatuh tajam (turun lebih dari 5%)
 
+# --- AKUMULASI DIAM-DIAM via OBV (baru) ---
+# Deteksi OBV naik signifikan sementara harga masih relatif flat -
+# proxy gratis untuk "ada yang mengumpulkan barang" tanpa perlu data broker
+OBV_LOOKBACK = 15               # bandingkan OBV hari ini vs N hari lalu
+OBV_MAX_HARGA_FLAT_PCT = 5      # harga dianggap "masih flat" kalau perubahan < ini
+
 MIN_SKOR_ALERT = 2       # minimal berapa indikator sejalan supaya masuk alert
 LOOKBACK_DAYS = "6mo"
 JEDA_ANTAR_REQUEST = 0.3  # detik, supaya tidak kena rate-limit yfinance
@@ -139,6 +145,14 @@ def calculate_bollinger(df, period=20, std_mult=2):
     return mid + std_mult * std, mid, mid - std_mult * std
 
 
+def calculate_obv(df):
+    """On-Balance Volume - proxy gratis untuk deteksi akumulasi/distribusi
+    tanpa perlu data broker. Naik terus = ada tekanan beli kumulatif."""
+    arah = np.sign(df["Close"].diff()).fillna(0)
+    obv = (arah * df["Volume"]).cumsum()
+    return obv
+
+
 # ============================================================
 # 3. AMBIL DAFTAR SAHAM
 # ============================================================
@@ -176,6 +190,7 @@ def analyze_ticker(ticker):
         df["Supertrend"], df["ST_Direction"] = calculate_supertrend(df, ST_ATR_PERIOD, ST_MULTIPLIER)
         df["BB_upper"], df["BB_mid"], df["BB_lower"] = calculate_bollinger(df, BB_PERIOD, BB_STD)
         df["Vol_avg"] = df["Volume"].rolling(window=VOL_LOOKBACK).mean()
+        df["OBV"] = calculate_obv(df)
 
         latest, prev = df.iloc[-1], df.iloc[-2]
 
@@ -205,6 +220,21 @@ def analyze_ticker(ticker):
             and EARLY_MIN_KENAIKAN_PCT <= kenaikan_5hari_pct <= EARLY_MAX_KENAIKAN_PCT
         )
 
+        # --- Akumulasi Diam-diam: OBV naik signifikan, harga masih flat ---
+        # Ini menangkap fase LEBIH AWAL dari deteksi_dini di atas - bahkan
+        # sebelum volume harian tunggal melonjak, kalau tekanan beli sudah
+        # terkumpul bertahap selama beberapa hari (baru terlihat di OBV)
+        akumulasi_obv = False
+        if len(df) > OBV_LOOKBACK:
+            obv_now = latest["OBV"]
+            obv_dulu = df["OBV"].iloc[-(OBV_LOOKBACK + 1)]
+            harga_dulu = df["Close"].iloc[-(OBV_LOOKBACK + 1)]
+            harga_flat_pct = ((latest["Close"] - harga_dulu) / harga_dulu) * 100
+            obv_naik = obv_now > obv_dulu
+            harga_masih_flat = abs(harga_flat_pct) <= OBV_MAX_HARGA_FLAT_PCT
+            akumulasi_obv = obv_naik and harga_masih_flat
+
+
         skor = sum([stoch_golden_cross, supertrend_bullish, di_lower_band])
 
         keterangan = []
@@ -222,6 +252,8 @@ def analyze_ticker(ticker):
             keterangan.append(f"Harga naik {kenaikan_5hari_pct:.0f}% (5 hari)")
         if deteksi_dini:
             keterangan.append(f"🔍 DETEKSI DINI: vol {vol_ratio:.1f}x, harga baru {kenaikan_5hari_pct:+.1f}%")
+        if akumulasi_obv:
+            keterangan.append(f"🤫 AKUMULASI OBV: naik {OBV_LOOKBACK}hr, harga flat {harga_flat_pct:+.1f}%")
 
         return {
             "Ticker": ticker.replace(".JK", ""),
@@ -232,6 +264,7 @@ def analyze_ticker(ticker):
             "Volume_Alert": volume_alert,
             "Chart_Naik_Signifikan": chart_naik_signifikan,
             "Deteksi_Dini": deteksi_dini,
+            "Akumulasi_OBV": akumulasi_obv,
             "Keterangan": " | ".join(keterangan) if keterangan else "-",
         }
     except Exception:
@@ -286,13 +319,17 @@ def run_full_scan():
     # Saham Deteksi Dini: volume melonjak, harga BELUM bergerak jauh (early stage)
     deteksi_dini_alert = df_hasil[df_hasil["Deteksi_Dini"]].sort_values("Vol_ratio", ascending=False)
 
+    # Saham Akumulasi OBV: tekanan beli terkumpul bertahap, harga masih flat (paling awal)
+    akumulasi_alert = df_hasil[df_hasil["Akumulasi_OBV"]]
+
     print(f"\n{'='*80}")
     print(f"HASIL FULL SCAN - {waktu_wib().strftime('%Y-%m-%d %H:%M')}")
     print(f"{'='*80}")
     print(f"Total saham dianalisis: {len(df_hasil)}")
     print(f"Saham confluence >= {MIN_SKOR_ALERT}: {len(confluence_kuat)}")
     print(f"Saham momentum/volume alert: {len(momentum_alert)}")
-    print(f"Saham deteksi dini: {len(deteksi_dini_alert)}\n")
+    print(f"Saham deteksi dini: {len(deteksi_dini_alert)}")
+    print(f"Saham akumulasi OBV: {len(akumulasi_alert)}\n")
 
     if not confluence_kuat.empty:
         print(confluence_kuat[["Ticker", "Harga", "Skor", "Keterangan"]].to_string(index=False))
@@ -316,12 +353,18 @@ def run_full_scan():
         pesan += "<b>🔍 Deteksi Dini (volume naik, harga BELUM bergerak jauh):</b>\n"
         for _, row in deteksi_dini_alert.head(10).iterrows():
             pesan += f"• {row['Ticker']} (Rp{row['Harga']:.0f}) - Vol {row['Vol_ratio']:.1f}x, baru {row['Kenaikan_5hari_%']:+.1f}% (5hr)\n"
-        pesan += "\n<i>Sinyal lebih awal, tapi juga lebih tidak pasti - selalu cek berita/katalis dulu.</i>\n\n"
+        pesan += "\n"
 
-    if not momentum_alert.empty or not deteksi_dini_alert.empty:
+    if not akumulasi_alert.empty:
+        pesan += f"<b>🤫 Akumulasi OBV (paling awal, harga flat {OBV_LOOKBACK} hari terakhir):</b>\n"
+        for _, row in akumulasi_alert.head(10).iterrows():
+            pesan += f"• {row['Ticker']} (Rp{row['Harga']:.0f})\n"
+        pesan += "\n<i>Belum tentu langsung bergerak - ini fase paling spekulatif, pantau dulu.</i>\n\n"
+
+    if not momentum_alert.empty or not deteksi_dini_alert.empty or not akumulasi_alert.empty:
         pesan += "<i>Ingat: volume spike bisa breakout ATAU distribusi. Cek berita & pakai cut-loss.</i>"
 
-    if confluence_kuat.empty and momentum_alert.empty and deteksi_dini_alert.empty:
+    if confluence_kuat.empty and momentum_alert.empty and deteksi_dini_alert.empty and akumulasi_alert.empty:
         pesan += "Tidak ada sinyal signifikan hari ini."
 
     kirim_telegram(pesan)
