@@ -388,3 +388,296 @@ def run_full_scan():
 
 if __name__ == "__main__":
     run_full_scan()
+   """
+TAMBAHAN INDIKATOR: CMF & A/D Line
+============================================================================
+File ini BUKAN untuk dijalankan sendiri. Isinya potongan kode yang tinggal
+kamu tempel ke full_scanner_telegram.py di posisi yang ditandai.
+
+Kenapa CMF & A/D Line?
+OBV yang sudah ada di bot kamu cuma lihat ARAH close hari ini vs kemarin
+(naik/turun), lalu tambah/kurang volume penuh berdasarkan itu. Masalahnya,
+saham yang closing di tengah-tengah range harian dianggap sama kuatnya
+dengan yang closing di pucuk tertinggi hari itu - padahal itu sinyal yang
+jauh beda kekuatannya.
+
+CMF (Chaikin Money Flow) dan A/D Line memperbaiki ini dengan melihat DI MANA
+posisi closing price di dalam range High-Low hari itu:
+- Closing dekat High  -> tekanan beli kuat  -> multiplier mendekati +1
+- Closing dekat Low   -> tekanan jual kuat  -> multiplier mendekati -1
+- Closing di tengah   -> netral             -> multiplier mendekati 0
+
+Volume dikalikan multiplier ini, jadi volume besar dengan closing lemah
+TIDAK dianggap sebagai akumulasi - beda dengan OBV yang akan menganggapnya
+akumulasi penuh selama close > close kemarin.
+============================================================================
+"""
+
+import pandas as pd
+import numpy as np
+
+
+# ============================================================
+# 1. FUNGSI INDIKATOR BARU
+# Tempel ini di dekat calculate_obv() yang sudah ada
+# ============================================================
+
+def calculate_money_flow_multiplier(df):
+    """Posisi closing price di dalam range High-Low.
+    +1 = closing di High (tekanan beli maksimal)
+    -1 = closing di Low (tekanan jual maksimal)
+     0 = closing di tengah (netral)"""
+    high, low, close = df["High"], df["Low"], df["Close"]
+    range_hl = (high - low).replace(0, np.nan)  # hindari divide-by-zero saat High==Low
+    mfm = ((close - low) - (high - close)) / range_hl
+    return mfm.fillna(0)
+
+
+def calculate_cmf(df, period=20):
+    """Chaikin Money Flow - rata-rata tekanan beli/jual selama N hari,
+    dibobotkan volume. Range -1 sampai +1.
+    > 0.1  = tekanan beli cukup kuat (dianggap bullish)
+    < -0.1 = tekanan jual cukup kuat (dianggap bearish)
+    di antaranya = netral, jangan dianggap sinyal"""
+    mfm = calculate_money_flow_multiplier(df)
+    mfv = mfm * df["Volume"]
+    cmf = mfv.rolling(window=period).sum() / df["Volume"].rolling(window=period).sum()
+    return cmf
+
+
+def calculate_ad_line(df):
+    """Accumulation/Distribution Line - versi OBV yang dibobotkan posisi
+    closing, bukan cuma arah close vs close kemarin. Kumulatif seperti OBV,
+    jadi dibaca dari TRENnya (naik terus vs mendatar/turun), bukan angka
+    absolutnya."""
+    mfm = calculate_money_flow_multiplier(df)
+    mfv = mfm * df["Volume"]
+    return mfv.cumsum()
+
+
+# ============================================================
+# 2. CARA INTEGRASI KE analyze_ticker()
+# ============================================================
+"""
+LANGKAH 1 - Tambahkan setelah baris df["OBV"] = calculate_obv(df):
+
+    df["CMF"] = calculate_cmf(df, period=20)
+    df["AD"] = calculate_ad_line(df)
+
+
+LANGKAH 2 - Tambahkan konfigurasi baru di bagian atas file, dekat
+OBV_LOOKBACK yang sudah ada:
+
+    CMF_THRESHOLD = 0.1       # di atas ini dianggap tekanan beli kuat
+    AD_LOOKBACK = 15          # sama seperti OBV_LOOKBACK, untuk divergence
+    AD_MAX_HARGA_FLAT_PCT = 5
+
+
+LANGKAH 3 - Tambahkan logika deteksi di dalam analyze_ticker(), sejajar
+dengan blok "akumulasi_obv" yang sudah ada:
+
+    # --- CMF Bullish: tekanan beli bersih kuat dalam 20 hari terakhir ---
+    cmf_bullish = latest["CMF"] > CMF_THRESHOLD
+
+    # --- A/D Divergence: mirip akumulasi_obv, tapi pakai A/D Line yang
+    # lebih akurat karena mempertimbangkan posisi closing, bukan cuma arah ---
+    ad_divergence = False
+    if len(df) > AD_LOOKBACK:
+        ad_now = latest["AD"]
+        ad_dulu = df["AD"].iloc[-(AD_LOOKBACK + 1)]
+        harga_dulu_ad = df["Close"].iloc[-(AD_LOOKBACK + 1)]
+        harga_flat_pct_ad = ((latest["Close"] - harga_dulu_ad) / harga_dulu_ad) * 100
+        ad_naik = ad_now > ad_dulu
+        harga_masih_flat_ad = abs(harga_flat_pct_ad) <= AD_MAX_HARGA_FLAT_PCT
+        ad_divergence = ad_naik and harga_masih_flat_ad
+
+    # Sinyal paling kuat: OBV DAN A/D Line dua-duanya konfirmasi akumulasi.
+    # Kalau cuma salah satu, masih bisa false signal (misal saham dengan
+    # sedikit transaksi besar di closing tinggi tapi volume total kecil).
+    akumulasi_terkonfirmasi = akumulasi_obv and ad_divergence
+
+
+LANGKAH 4 - Tambahkan ke bagian keterangan (masih di dalam analyze_ticker,
+di blok "if akumulasi_obv:" yang sudah ada):
+
+    if cmf_bullish:
+        keterangan.append(f"CMF {latest['CMF']:.2f} (tekanan beli kuat)")
+    if akumulasi_terkonfirmasi:
+        keterangan.append("AKUMULASI TERKONFIRMASI (OBV + A/D Line sejalan)")
+    elif ad_divergence:
+        keterangan.append(f"A/D Divergence: naik {AD_LOOKBACK}hr, harga flat {harga_flat_pct_ad:+.1f}%")
+
+
+LANGKAH 5 - Tambahkan field baru ke dictionary return di akhir
+analyze_ticker() (sejajar dengan "Akumulasi_OBV" yang sudah ada):
+
+    "CMF": round(latest["CMF"], 3),
+    "CMF_Bullish": cmf_bullish,
+    "AD_Divergence": ad_divergence,
+    "Akumulasi_Terkonfirmasi": akumulasi_terkonfirmasi,
+
+
+LANGKAH 6 (opsional tapi disarankan) - Di run_full_scan(), tambahkan
+kategori alert baru sejajar dengan akumulasi_alert yang sudah ada:
+
+    akumulasi_kuat_alert = df_hasil[df_hasil["Akumulasi_Terkonfirmasi"]]
+
+    ...lalu tambahkan ke pesan Telegram, sejajar blok akumulasi_alert:
+
+    if not akumulasi_kuat_alert.empty:
+        pesan += "<b>AKUMULASI TERKONFIRMASI (2 indikator sejalan):</b>\\n"
+        for _, row in akumulasi_kuat_alert.head(10).iterrows():
+            pesan += f"- {row['Ticker']} (Rp{row['Harga']:.0f})\\n"
+        pesan += "\\n"
+"""
+"""
+TAMBAHAN INDIKATOR: ARA DETECTOR (Auto Reject Atas)
+============================================================================
+File ini BUKAN untuk dijalankan sendiri. Isinya potongan kode yang tinggal
+kamu tempel ke full_scanner_telegram.py di posisi yang ditandai.
+
+Konsep:
+BEI membatasi kenaikan harga saham maksimal dalam satu hari perdagangan.
+Batasnya bertingkat sesuai harga acuan saham:
+    Rp50    - Rp200   -> maks naik 35%
+    Rp200   - Rp5.000  -> maks naik 25%
+    > Rp5.000           -> maks naik 20%
+
+Karena bot ini jalan dengan data HARIAN (bukan intraday real-time), detector
+ini sifatnya RETROSPEKTIF: mendeteksi saham yang KEMARIN closing di/dekat
+batas ARA, bukan mendeteksi saat kejadian ARA berlangsung hari itu juga.
+Ini tetap berguna untuk watchlist "saham yang lagi diburu, potensi lanjut
+besok" - strategi yang memang umum dipakai trader ARA hunter.
+
+Keterbatasan yang perlu kamu sadari:
+1. Saham baru IPO (biasanya beberapa hari pertama) punya aturan ARA yang
+   BEDA (kadang tanpa batas atau threshold khusus). Fungsi di bawah TIDAK
+   menangani kasus ini secara otomatis - kalau mau presisi, kamu perlu
+   daftar tanggal IPO tiap ticker dan exclude beberapa hari pertama.
+2. Harga saham dibulatkan ke fraksi tertentu (tick size), jadi kenaikan
+   aktual saat ARA kadang sedikit di bawah persentase teoritis
+   (misal 24.7% bukan pas 25.0%). Makanya threshold diberi toleransi.
+3. Ini tidak menggantikan data real-time. Kalau butuh tahu ARA SAAT
+   terjadi (bukan besoknya), butuh data intraday yang yfinance tidak
+   reliable untuk saham IDX.
+============================================================================
+"""
+
+import pandas as pd
+
+
+# ============================================================
+# 1. FUNGSI THRESHOLD ARA SESUAI TINGKATAN HARGA
+# Tempel ini di dekat fungsi indikator lain yang sudah ada
+# ============================================================
+
+def get_batas_ara(harga_acuan):
+    """Kembalikan persentase batas ARA sesuai tingkatan harga acuan
+    (harga penutupan hari sebelumnya)."""
+    if harga_acuan < 200:
+        return 35.0
+    elif harga_acuan <= 5000:
+        return 25.0
+    else:
+        return 20.0
+
+
+# ============================================================
+# 2. TOLERANSI - supaya tidak miss karena pembulatan tick size
+# ============================================================
+
+TOLERANSI_ARA_PCT = 1.5   # dianggap "kena ARA" kalau >= (batas - toleransi)
+AMBANG_MENDEKATI_ARA_PCT = 5.0  # dianggap "mendekati ARA" kalau masih X% di bawah batas kena
+
+
+def cek_status_ara(harga_acuan, harga_close_hari_ini):
+    """Bandingkan closing hari ini terhadap harga acuan (closing kemarin)
+    dan tentukan status ARA-nya.
+
+    Return: dict berisi persen_kenaikan, batas_ara, kena_ara, mendekati_ara
+    """
+    if harga_acuan <= 0:
+        return {"persen_kenaikan": 0, "batas_ara": 0, "kena_ara": False, "mendekati_ara": False}
+
+    persen_kenaikan = ((harga_close_hari_ini - harga_acuan) / harga_acuan) * 100
+    batas = get_batas_ara(harga_acuan)
+
+    kena_ara = persen_kenaikan >= (batas - TOLERANSI_ARA_PCT)
+    mendekati_ara = (not kena_ara) and (persen_kenaikan >= (batas - AMBANG_MENDEKATI_ARA_PCT))
+
+    return {
+        "persen_kenaikan": round(persen_kenaikan, 2),
+        "batas_ara": batas,
+        "kena_ara": kena_ara,
+        "mendekati_ara": mendekati_ara,
+    }
+
+
+# ============================================================
+# 3. CARA INTEGRASI KE analyze_ticker()
+# ============================================================
+"""
+LANGKAH 1 - Di dalam analyze_ticker(), setelah kamu ambil df dan sebelum
+menyusun dictionary return, tambahkan:
+
+    harga_acuan = df["Close"].iloc[-2]      # closing kemarin
+    harga_sekarang = df["Close"].iloc[-1]   # closing hari ini (latest)
+    status_ara = cek_status_ara(harga_acuan, harga_sekarang)
+
+
+LANGKAH 2 - Tambahkan ke keterangan (sejajar blok keterangan lain yang
+sudah ada):
+
+    if status_ara["kena_ara"]:
+        keterangan.append(
+            f"ARA! naik {status_ara['persen_kenaikan']}% "
+            f"(batas {status_ara['batas_ara']}%)"
+        )
+    elif status_ara["mendekati_ara"]:
+        keterangan.append(
+            f"Mendekati ARA: naik {status_ara['persen_kenaikan']}% "
+            f"(batas {status_ara['batas_ara']}%)"
+        )
+
+
+LANGKAH 3 - Tambahkan field baru ke dictionary return di akhir
+analyze_ticker():
+
+    "Persen_Kenaikan": status_ara["persen_kenaikan"],
+    "Kena_ARA": status_ara["kena_ara"],
+    "Mendekati_ARA": status_ara["mendekati_ara"],
+
+
+LANGKAH 4 - Di run_full_scan(), tambahkan kategori alert baru khusus ARA,
+sejajar dengan akumulasi_alert yang sudah ada:
+
+    ara_alert = df_hasil[df_hasil["Kena_ARA"]].sort_values(
+        "Persen_Kenaikan", ascending=False
+    )
+    mendekati_ara_alert = df_hasil[df_hasil["Mendekati_ARA"]].sort_values(
+        "Persen_Kenaikan", ascending=False
+    )
+
+    if not ara_alert.empty:
+        pesan += "<b>ARA KEMARIN (watchlist lanjutan):</b>\\n"
+        for _, row in ara_alert.head(10).iterrows():
+            pesan += f"- {row['Ticker']}: +{row['Persen_Kenaikan']}% (Rp{row['Harga']:.0f})\\n"
+        pesan += "\\n"
+
+    if not mendekati_ara_alert.empty:
+        pesan += "<b>MENDEKATI ARA:</b>\\n"
+        for _, row in mendekati_ara_alert.head(10).iterrows():
+            pesan += f"- {row['Ticker']}: +{row['Persen_Kenaikan']}% (Rp{row['Harga']:.0f})\\n"
+        pesan += "\\n"
+
+
+CATATAN EVALUASI (silakan disesuaikan sambil kamu tes):
+- Kalau banyak false positive dari saham yang baru IPO, tambahkan filter:
+  lewati ticker yang jumlah datanya (len(df)) masih sangat sedikit
+  (misal < 10 hari), karena itu indikasi baru listing dan aturan ARA-nya
+  beda.
+- TOLERANSI_ARA_PCT dan AMBANG_MENDEKATI_ARA_PCT itu angka awal tebakan -
+  sesuaikan berdasarkan hasil evaluasi kamu terhadap saham yang kamu tahu
+  betulan kena ARA kemarin, cek apakah persen_kenaikan yang terhitung
+  sudah pas dengan kondisi riil.
+"""
