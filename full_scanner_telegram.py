@@ -63,6 +63,13 @@ TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "ISI_CHAT_ID_KAMU_DISINI")
 MIN_HARGA = 50               # abaikan saham di bawah harga ini
 MIN_VOLUME_HARIAN = 100000   # abaikan saham dengan rata-rata volume < ini (lembar/hari)
 
+# Filter tambahan berbasis NILAI transaksi (Rupiah), bukan cuma jumlah lembar.
+# Ini penting karena saham murah dengan volume lembar besar tapi nilai Rupiah
+# kecil paling rawan "dipoles" candle-nya (closing dipertahankan tinggi oleh
+# pemain besar sambil pelan-pelan distribusi) - persis kasus false positive
+# akumulasi yang perlu disaring dari kategori CMF/Akumulasi.
+MIN_NILAI_TRANSAKSI_HARIAN = 2_000_000_000  # rata-rata 20 hari, dalam Rupiah
+
 DAFTAR_SAHAM_FILE = "Daftar_Saham_Idx.csv"  # file CSV yang kamu upload
 DAFTAR_SAHAM_KOLOM = "Kode"                 # nama kolom yang berisi kode saham
 
@@ -113,7 +120,13 @@ AD_MAX_HARGA_FLAT_PCT = 5
 TOLERANSI_ARA_PCT = 1.5          # dianggap "kena ARA" kalau >= (batas - toleransi)
 AMBANG_MENDEKATI_ARA_PCT = 5.0   # dianggap "mendekati ARA" kalau masih segini % di bawah batas
 
-MIN_SKOR_ALERT = 2   # minimal berapa indikator sejalan supaya masuk alert
+MIN_SKOR_ALERT = 3   # perketat: wajib SEMUA indikator (Stoch+Supertrend+BB) sejalan, bukan cuma 2 dari 3
+
+# --- PERSISTENSI SINYAL ---
+# Sinyal yang muncul 2 hari scan berturut-turut jauh lebih bisa dipercaya
+# daripada yang muncul sekali lalu hilang. File CSV hasil scan kemarin
+# dipakai sebagai pembanding otomatis.
+FOLDER_HASIL_SCAN = "."  # folder tempat file full_scan_*.csv disimpan
 LOOKBACK_DAYS = "6mo"
 JEDA_ANTAR_REQUEST = 0.3   # detik, supaya tidak kena rate-limit yfinance
 
@@ -297,6 +310,10 @@ def analyze_ticker(ticker):
         if latest["Close"] < MIN_HARGA or avg_vol_20 < MIN_VOLUME_HARIAN:
             return None
 
+        # --- Filter nilai transaksi (Rupiah) - saring saham "gampang dipoles" ---
+        nilai_transaksi_20 = (df["Close"].tail(20) * df["Volume"].tail(20)).mean()
+        likuid_untuk_akumulasi = nilai_transaksi_20 >= MIN_NILAI_TRANSAKSI_HARIAN
+
         stoch_golden_cross = (prev["Stoch_K"] <= prev["Stoch_D"]) and (latest["Stoch_K"] > latest["Stoch_D"])
         supertrend_bullish = latest["ST_Direction"] == 1
         supertrend_baru_hijau = (prev["ST_Direction"] == -1) and (latest["ST_Direction"] == 1)
@@ -350,6 +367,16 @@ def analyze_ticker(ticker):
         # Sinyal paling kuat: OBV DAN A/D Line dua-duanya konfirmasi akumulasi.
         akumulasi_terkonfirmasi = akumulasi_obv and ad_divergence
 
+        # Gerbang likuiditas: sinyal akumulasi/CMF HANYA valid kalau nilai
+        # transaksinya cukup besar. Saham tipis terlalu mudah "dipoles"
+        # closing-nya oleh modal kecil, menghasilkan CMF/OBV tinggi palsu
+        # yang sebenarnya distribusi (lihat kasus AMAG).
+        if not likuid_untuk_akumulasi:
+            cmf_bullish = False
+            akumulasi_obv = False
+            ad_divergence = False
+            akumulasi_terkonfirmasi = False
+
         # --- ARA Detector: closing hari ini vs closing kemarin ---
         status_ara = cek_status_ara(prev["Close"], latest["Close"])
 
@@ -387,6 +414,8 @@ def analyze_ticker(ticker):
             "Ticker": ticker.replace(".JK", ""),
             "Harga": round(latest["Close"], 0),
             "Skor": skor,
+            "Nilai_Transaksi_20hr": round(nilai_transaksi_20, 0),
+            "Likuid_Akumulasi": likuid_untuk_akumulasi,
             "Vol_ratio": round(vol_ratio, 2),
             "Kenaikan_5hari_%": round(kenaikan_5hari_pct, 1),
             "Volume_Alert": volume_alert,
@@ -435,6 +464,30 @@ def kirim_telegram(pesan):
             print(f"[ERROR] Exception saat kirim Telegram (bagian {i+1}/{len(potongan)}): {e}")
 
 
+def get_ticker_persisten(kategori_hari_ini, nama_kategori):
+    """Bandingkan daftar ticker kategori tertentu hari ini dengan hasil
+    scan TERAKHIR yang tersimpan (file full_scan_*.csv sebelumnya).
+    Return set ticker yang muncul di KEDUA scan (dianggap lebih meyakinkan
+    karena tidak cuma noise sehari)."""
+    import glob
+
+    file_lama = sorted(glob.glob(os.path.join(FOLDER_HASIL_SCAN, "full_scan_*.csv")))
+    if not file_lama:
+        return set()  # belum ada riwayat scan sebelumnya
+
+    try:
+        df_kemarin = pd.read_csv(file_lama[-1])  # scan terakhir yang tersimpan
+        if nama_kategori == "confluence":
+            ticker_kemarin = set(df_kemarin[df_kemarin["Skor"] >= MIN_SKOR_ALERT]["Ticker"])
+        elif nama_kategori == "akumulasi_terkonfirmasi":
+            ticker_kemarin = set(df_kemarin[df_kemarin["Akumulasi_Terkonfirmasi"]]["Ticker"])
+        else:
+            return set()
+        return set(kategori_hari_ini) & ticker_kemarin
+    except Exception:
+        return set()
+
+
 # ============================================================
 # 6. JALANKAN FULL SCAN
 # ============================================================
@@ -477,6 +530,10 @@ def run_full_scan():
     ara_alert = df_hasil[df_hasil["Kena_ARA"]].sort_values("Persen_Kenaikan", ascending=False)
     mendekati_ara_alert = df_hasil[df_hasil["Mendekati_ARA"]].sort_values("Persen_Kenaikan", ascending=False)
 
+    # --- Cek persistensi vs scan sebelumnya (harus dipanggil SEBELUM file CSV baru disimpan) ---
+    persisten_confluence = get_ticker_persisten(confluence_kuat["Ticker"].tolist(), "confluence")
+    persisten_akumulasi = get_ticker_persisten(akumulasi_kuat_alert["Ticker"].tolist(), "akumulasi_terkonfirmasi")
+
     print(f"\n{'='*80}")
     print(f"HASIL FULL SCAN - {waktu_wib().strftime('%Y-%m-%d %H:%M')}")
     print(f"{'='*80}")
@@ -496,9 +553,10 @@ def run_full_scan():
     pesan = f"<b>SCAN IHSG - {waktu_wib().strftime('%d %b %Y %H:%M')}</b>\n\n"
 
     if not confluence_kuat.empty:
-        pesan += "<b>Confluence Kuat (2-3 indikator sejalan):</b>\n"
+        pesan += "<b>Confluence Kuat (Stoch+Supertrend+BB semua sejalan):</b>\n"
         for _, row in confluence_kuat.head(10).iterrows():
-            pesan += f"• {row['Ticker']} (Rp{row['Harga']:.0f}) - {row['Keterangan']}\n"
+            tanda = " 🔥2hr" if row["Ticker"] in persisten_confluence else ""
+            pesan += f"• {row['Ticker']}{tanda} (Rp{row['Harga']:.0f}) - {row['Keterangan']}\n"
         pesan += "\n"
 
     if not momentum_alert.empty:
@@ -514,16 +572,15 @@ def run_full_scan():
         pesan += "\n"
 
     if not akumulasi_kuat_alert.empty:
-        pesan += "<b>✅ Akumulasi Terkonfirmasi (OBV + A/D Line sejalan):</b>\n"
+        pesan += "<b>✅ Akumulasi Terkonfirmasi (sudah difilter nilai transaksi ≥2M/hari):</b>\n"
         for _, row in akumulasi_kuat_alert.head(10).iterrows():
-            pesan += f"• {row['Ticker']} (Rp{row['Harga']:.0f}) - CMF {row['CMF']:.2f}\n"
-        pesan += "\n"
+            tanda = " 🔥2hr" if row["Ticker"] in persisten_akumulasi else ""
+            pesan += f"• {row['Ticker']}{tanda} (Rp{row['Harga']:.0f}) - CMF {row['CMF']:.2f}\n"
+        pesan += "\n<i>🔥2hr = muncul juga di scan sebelumnya, lebih meyakinkan. Tetap bukan jaminan - CMF/OBV tidak bisa membedakan akumulasi asli vs distribusi absorptif (lihat catatan bawah).</i>\n\n"
 
     if not akumulasi_alert.empty:
-        pesan += f"<b>🤫 Akumulasi OBV (belum terkonfirmasi A/D, harga flat {OBV_LOOKBACK} hari):</b>\n"
-        for _, row in akumulasi_alert.head(10).iterrows():
-            pesan += f"• {row['Ticker']} (Rp{row['Harga']:.0f})\n"
-        pesan += "\n<i>Belum tentu langsung bergerak - ini fase paling spekulatif, pantau dulu.</i>\n\n"
+        pesan += (f"<b>🤫 Akumulasi OBV (belum lolos filter nilai transaksi/A-D, harga flat {OBV_LOOKBACK} hari):</b>\n"
+                  f"{len(akumulasi_alert)} saham - kategori paling spekulatif, cek manual dulu sebelum ikuti.\n\n")
 
     if not ara_alert.empty:
         pesan += "<b>🚀 ARA Kemarin (watchlist lanjutan):</b>\n"
@@ -542,7 +599,11 @@ def run_full_scan():
                       and ara_alert.empty and mendekati_ara_alert.empty)
 
     if ada_sinyal:
-        pesan += "<i>Ingat: volume spike/ARA bisa lanjut naik ATAU jadi ajang distribusi. Cek berita & pakai cut-loss.</i>"
+        pesan += ("<i>Ingat: volume spike/ARA bisa lanjut naik ATAU jadi ajang distribusi. "
+                  "CMF/OBV membaca bentuk candle, BUKAN data broker asli - closing tinggi karena "
+                  "serapan agresif ritel bisa terlihat identik dengan akumulasi asli padahal itu "
+                  "distribusi (cek Trade Flow/Smart Money di sekuritas kamu untuk saham yang menarik "
+                  "sebelum eksekusi). Selalu cek berita & pakai cut-loss.</i>")
     else:
         pesan += "Tidak ada sinyal signifikan hari ini."
 
