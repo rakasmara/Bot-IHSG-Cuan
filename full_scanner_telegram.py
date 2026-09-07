@@ -310,9 +310,15 @@ def analyze_ticker(ticker):
         if latest["Close"] < MIN_HARGA or avg_vol_20 < MIN_VOLUME_HARIAN:
             return None
 
-        # --- Filter nilai transaksi (Rupiah) - saring saham "gampang dipoles" ---
+        # --- Filter nilai transaksi (Rupiah) - gerbang UNIVERSAL, bukan cuma akumulasi ---
+        # Saham dengan nilai transaksi kecil gampang "dipoles" candle-nya (closing
+        # dipertahankan tinggi oleh modal kecil sambil pelan-pelan distribusi -
+        # lihat kasus AMAG). Sekarang saham seperti ini di-skip dari SEMUA
+        # kategori (Confluence Kuat, Momentum, Akumulasi, dst), bukan cuma
+        # dinonaktifkan sinyal CMF/OBV-nya saja seperti versi sebelumnya.
         nilai_transaksi_20 = (df["Close"].tail(20) * df["Volume"].tail(20)).mean()
-        likuid_untuk_akumulasi = nilai_transaksi_20 >= MIN_NILAI_TRANSAKSI_HARIAN
+        if nilai_transaksi_20 < MIN_NILAI_TRANSAKSI_HARIAN:
+            return None
 
         stoch_golden_cross = (prev["Stoch_K"] <= prev["Stoch_D"]) and (latest["Stoch_K"] > latest["Stoch_D"])
         supertrend_bullish = latest["ST_Direction"] == 1
@@ -367,16 +373,6 @@ def analyze_ticker(ticker):
         # Sinyal paling kuat: OBV DAN A/D Line dua-duanya konfirmasi akumulasi.
         akumulasi_terkonfirmasi = akumulasi_obv and ad_divergence
 
-        # Gerbang likuiditas: sinyal akumulasi/CMF HANYA valid kalau nilai
-        # transaksinya cukup besar. Saham tipis terlalu mudah "dipoles"
-        # closing-nya oleh modal kecil, menghasilkan CMF/OBV tinggi palsu
-        # yang sebenarnya distribusi (lihat kasus AMAG).
-        if not likuid_untuk_akumulasi:
-            cmf_bullish = False
-            akumulasi_obv = False
-            ad_divergence = False
-            akumulasi_terkonfirmasi = False
-
         # --- ARA Detector: closing hari ini vs closing kemarin ---
         status_ara = cek_status_ara(prev["Close"], latest["Close"])
 
@@ -415,7 +411,6 @@ def analyze_ticker(ticker):
             "Harga": round(latest["Close"], 0),
             "Skor": skor,
             "Nilai_Transaksi_20hr": round(nilai_transaksi_20, 0),
-            "Likuid_Akumulasi": likuid_untuk_akumulasi,
             "Vol_ratio": round(vol_ratio, 2),
             "Kenaikan_5hari_%": round(kenaikan_5hari_pct, 1),
             "Volume_Alert": volume_alert,
