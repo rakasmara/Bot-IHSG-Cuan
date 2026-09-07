@@ -370,8 +370,13 @@ def analyze_ticker(ticker):
             harga_masih_flat_ad = abs(harga_flat_pct_ad) <= AD_MAX_HARGA_FLAT_PCT
             ad_divergence = ad_naik and harga_masih_flat_ad
 
-        # Sinyal paling kuat: OBV DAN A/D Line dua-duanya konfirmasi akumulasi.
-        akumulasi_terkonfirmasi = akumulasi_obv and ad_divergence
+        # Sinyal paling kuat: OBV, A/D Line, DAN CMF saat ini SEMUA sejalan.
+        # Sebelumnya cuma syarat OBV+A/D - tapi itu bisa lolos walau CMF
+        # sekarang sudah negatif (artinya akumulasi 15 hari lalu, tapi
+        # belakangan ini malah mulai didistribusi). Menambahkan cmf_bullish
+        # di sini mencegah label "Terkonfirmasi" muncul berbarengan dengan
+        # CMF negatif yang membingungkan.
+        akumulasi_terkonfirmasi = akumulasi_obv and ad_divergence and cmf_bullish
 
         # --- ARA Detector: closing hari ini vs closing kemarin ---
         status_ara = cek_status_ara(prev["Close"], latest["Close"])
