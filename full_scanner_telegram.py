@@ -424,4 +424,140 @@ def kirim_telegram(pesan):
     for i, bagian in enumerate(potongan):
         try:
             url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
-            resp = requests.post(url, data={"chat_id": TELEGRAM_CHAT_ID, "text": bagian, "parse_mo
+            resp = requests.post(url, data={"chat_id": TELEGRAM_CHAT_ID, "text": bagian, "parse_mode": "HTML"}, timeout=15)
+            if resp.status_code != 200:
+                print(f"[ERROR] Gagal kirim Telegram (bagian {i+1}/{len(potongan)}): {resp.status_code} - {resp.text}")
+            else:
+                print(f"[OK] Pesan Telegram bagian {i+1}/{len(potongan)} terkirim.")
+        except Exception as e:
+            print(f"[ERROR] Exception saat kirim Telegram (bagian {i+1}/{len(potongan)}): {e}")
+
+
+def get_ticker_persisten(kategori_hari_ini, nama_kolom):
+    import glob
+    file_lama = sorted(glob.glob(os.path.join(FOLDER_HASIL_SCAN, "full_scan_*.csv")))
+    if not file_lama:
+        return set()
+    try:
+        df_kemarin = pd.read_csv(file_lama[-1])
+        ticker_kemarin = set(df_kemarin[df_kemarin[nama_kolom] == True]["Ticker"]) if nama_kolom in df_kemarin.columns else set()
+        return set(kategori_hari_ini) & ticker_kemarin
+    except Exception:
+        return set()
+
+
+# ============================================================
+# 7. JALANKAN FULL SCAN
+# ============================================================
+
+def run_full_scan():
+    tickers = get_watchlist()
+    print(f"\nMemulai scan {len(tickers)} saham...\n")
+
+    print("Menghitung rezim IHSG dulu (untuk filter MACD Divergence)...")
+    _, ihsg_rezim_sekarang = hitung_rezim_ihsg()
+    print(f"Rezim IHSG saat ini: {'BULLISH (di atas MA100)' if ihsg_rezim_sekarang else 'belum bullish'}\n")
+
+    hasil = []
+    for i, ticker in enumerate(tickers):
+        r = analyze_ticker(ticker, ihsg_rezim_sekarang)
+        if r:
+            hasil.append(r)
+        time.sleep(JEDA_ANTAR_REQUEST)
+        if (i + 1) % 10 == 0:
+            print(f"   ...progress {i+1}/{len(tickers)}")
+
+    if not hasil:
+        print("Tidak ada data berhasil diambil.")
+        return
+
+    df_hasil = pd.DataFrame(hasil)
+
+    confluence_kuat = df_hasil[df_hasil["Confluence_Kuat"]].sort_values("Skor_Confluence", ascending=False)
+    momentum_alert = df_hasil[df_hasil["Volume_Alert"] | df_hasil["Chart_Naik_Signifikan"]]
+    deteksi_dini_alert = df_hasil[df_hasil["Deteksi_Dini"]].sort_values("Vol_ratio", ascending=False)
+    cmf_alert = df_hasil[df_hasil["CMF_Akumulasi_Terkonfirmasi"]].sort_values("CMF", ascending=False)
+    double_golden_alert = df_hasil[df_hasil["Double_Golden_Cross"]]
+    ichimoku_alert = df_hasil[df_hasil["Ichimoku_Ringkas"]]
+    macd_div_alert = df_hasil[df_hasil["MACD_Divergence_Bull_Regime"]]
+
+    persisten_confluence = get_ticker_persisten(confluence_kuat["Ticker"].tolist(), "Confluence_Kuat")
+    persisten_cmf = get_ticker_persisten(cmf_alert["Ticker"].tolist(), "CMF_Akumulasi_Terkonfirmasi")
+
+    print(f"\n{'='*80}")
+    print(f"HASIL FULL SCAN - {waktu_wib().strftime('%Y-%m-%d %H:%M')}")
+    print(f"{'='*80}")
+    print(f"Total saham dianalisis: {len(df_hasil)}")
+    print(f"Confluence Kuat: {len(confluence_kuat)} | Momentum: {len(momentum_alert)} | Deteksi Dini: {len(deteksi_dini_alert)}")
+    print(f"CMF Akumulasi Terkonfirmasi: {len(cmf_alert)} | Stoch+MA Golden Cross: {len(double_golden_alert)}")
+    print(f"Ichimoku Ringkas: {len(ichimoku_alert)} | MACD Div+Rezim: {len(macd_div_alert)}\n")
+
+    pesan = f"<b>SCAN IHSG v2 - {waktu_wib().strftime('%d %b %Y %H:%M')}</b>\n"
+    pesan += f"<i>Rezim IHSG: {'🟢 Bullish' if ihsg_rezim_sekarang else '🔴 Belum bullish'}</i>\n\n"
+
+    if not confluence_kuat.empty:
+        pesan += "<b>Confluence Kuat (Stoch+Supertrend+BB):</b>\n"
+        for _, row in confluence_kuat.head(10).iterrows():
+            tanda = " 🔥2hr" if row["Ticker"] in persisten_confluence else ""
+            tanda_ov = " ⚠️OVERBOUGHT" if row["Sudah_Mentok_Upper_BB"] else ""
+            pesan += f"• {row['Ticker']}{tanda}{tanda_ov} (Rp{row['Harga']:.0f}) - {row['Keterangan']}\n"
+        pesan += "\n"
+
+    if not double_golden_alert.empty:
+        tipe_ma = "EMA" if GUNAKAN_EMA else "SMA"
+        pesan += f"<b>⚡ Stoch({STOCH_K},{STOCH_SMOOTH},{STOCH_D}) + {tipe_ma}({MA_FAST_PERIOD}/{MA_SLOW_PERIOD}) Golden Cross Bersamaan:</b>\n"
+        for _, row in double_golden_alert.head(10).iterrows():
+            tanda_ov = " ⚠️OVERBOUGHT" if row["Sudah_Mentok_Upper_BB"] else ""
+            pesan += f"• {row['Ticker']}{tanda_ov} (Rp{row['Harga']:.0f})\n"
+        pesan += "\n"
+
+    if not ichimoku_alert.empty:
+        pesan += "<b>☁️ Ichimoku Crossover (Kumo+Tenkan/Kijun+Chikou memotong BERSAMAAN hari ini):</b>\n"
+        for _, row in ichimoku_alert.head(10).iterrows():
+            tanda_ov = " ⚠️OVERBOUGHT" if row["Sudah_Mentok_Upper_BB"] else ""
+            pesan += f"• {row['Ticker']}{tanda_ov} (Rp{row['Harga']:.0f})\n"
+        pesan += "\n"
+
+    if not macd_div_alert.empty:
+        pesan += "<b>📈 MACD Histogram Divergence + Rezim Bullish (hasil backtest TERBAIK kita):</b>\n"
+        for _, row in macd_div_alert.head(10).iterrows():
+            tanda_ov = " ⚠️OVERBOUGHT" if row["Sudah_Mentok_Upper_BB"] else ""
+            pesan += f"• {row['Ticker']}{tanda_ov} (Rp{row['Harga']:.0f})\n"
+        pesan += "\n"
+    elif not ihsg_rezim_sekarang:
+        pesan += "<i>📈 MACD Divergence: tidak ada sinyal - rezim IHSG belum bullish (syarat wajib).</i>\n\n"
+
+    if not cmf_alert.empty:
+        pesan += "<b>💰 CMF Akumulasi Terkonfirmasi (harga naik + volume naik, bukan cuma teori):</b>\n"
+        for _, row in cmf_alert.head(10).iterrows():
+            tanda = " 🔥2hr" if row["Ticker"] in persisten_cmf else ""
+            tanda_ov = " ⚠️OVERBOUGHT" if row["Sudah_Mentok_Upper_BB"] else ""
+            pesan += f"• {row['Ticker']}{tanda}{tanda_ov} (Rp{row['Harga']:.0f}) - CMF {row['CMF']:.2f}\n"
+        pesan += "\n"
+
+    if not momentum_alert.empty:
+        pesan += "<b>⚠ Volume/Momentum Alert:</b>\n"
+        for _, row in momentum_alert.head(10).iterrows():
+            pesan += f"• {row['Ticker']} (Rp{row['Harga']:.0f}) - Vol {row['Vol_ratio']:.1f}x, naik {row['Kenaikan_5hari_%']:.0f}% (5hr)\n"
+        pesan += "\n"
+
+    if not deteksi_dini_alert.empty:
+        pesan += "<b>🔍 Deteksi Dini:</b>\n"
+        for _, row in deteksi_dini_alert.head(10).iterrows():
+            pesan += f"• {row['Ticker']} (Rp{row['Harga']:.0f}) - Vol {row['Vol_ratio']:.1f}x, baru {row['Kenaikan_5hari_%']:+.1f}% (5hr)\n"
+        pesan += "\n"
+
+    pesan += ("<i>PENGINGAT: dari ~20 backtest kita, TIDAK ADA kategori di atas yang terbukti "
+              "punya edge kuat setelah fee - yang terbaik (MACD Div+Rezim) cuma breakeven-ish. "
+              "Gunakan size kecil, WAJIB stop-loss disiplin, dan anggap ini latihan psikologi/"
+              "money-management, bukan sinyal pasti profit.</i>")
+
+    kirim_telegram(pesan)
+
+    filename = f"full_scan_{waktu_wib().strftime('%Y%m%d_%H%M')}.csv"
+    df_hasil.to_csv(filename, index=False)
+    print(f"\nHasil lengkap disimpan ke: {filename}")
+
+
+if __name__ == "__main__":
+    run_full_scan()
