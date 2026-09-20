@@ -1,33 +1,33 @@
 """
-FULL MARKET SCANNER IHSG + TELEGRAM ALERT
+FULL MARKET SCANNER IHSG + TELEGRAM ALERT (v2 - 20 Sept 2026)
 ============================================================================
-Scan SEMUA saham IDX (bukan cuma watchlist manual) untuk kombinasi:
-- Stochastic(6,3,3) golden cross
-- Supertrend(10,1) hijau
-- Bollinger Bands - harga di lower band
-- Volume spike (indikasi mau breakout)
-- CMF & A/D Line (tekanan beli/jual berbobot posisi closing - lebih akurat dari OBV)
-- ARA Detector (saham yang closing di/dekat batas Auto Reject Atas)
+PERUBAHAN BESAR dari versi sebelumnya, berdasarkan hasil ~20 backtest kita:
 
-Lalu kirim hasil confluence tinggi ke Telegram otomatis.
+DIHAPUS:
+- ARA Detector (kena Stop-Loss 68-74% di backtest, memicu FOMO)
+- Akumulasi OBV standalone (diganti CMF+konfirmasi harga naik di bawah)
 
-SETUP AWAL (WAJIB, lakukan sekali):
-============================================================================
-1. Dapatkan daftar lengkap kode saham IDX:
-   - Buka https://www.idx.co.id/id/data-pasar/data-saham/daftar-saham/
-   - Download file Excel/CSV daftar saham
-   - ATAU pakai sumber lain seperti sahamidx.com yang punya daftar kode saham
-   - Simpan sebagai "daftar_saham_idx.csv" dengan minimal 1 kolom bernama "Kode"
-   - Upload file itu ke Colab (klik ikon folder di sidebar kiri > upload)
+DITAMBAHKAN (JUJUR: TIDAK ada yang terbukti punya edge kuat di backtest -
+paling bagus MACD Histogram+Rezim di +0,16% sebelum fee, sisanya di bawah
+breakeven. Ini dipasang atas permintaan eksplisit untuk uji coba psikologis/
+money-management, BUKAN karena terbukti profitable):
+- Stochastic(6,3,3) + EMA(6,18) Golden Cross BERSAMAAN
+- Ichimoku Kinko Hyo versi RINGKAS (3 syarat, tanpa Chikou Span)
+- MACD Histogram Divergence + Filter Rezim Bullish IHSG (hasil backtest
+  TERBAIK kita, tapi tetap breakeven-ish setelah fee)
+- CMF Akumulasi Terkonfirmasi DIREVISI: sekarang wajib ada KONFIRMASI HARGA
+  NAIK + VOLUME NAIK (bukan cuma "akumulasi diam-diam" seperti sebelumnya)
+  - CATATAN: "Frequency Analyzer" (jumlah transaksi/hari) yang diminta TIDAK
+    BISA dibuat - yfinance tidak punya data itu. Ini pakai proxy Volume+Harga
+    saja. Kalau mau data Frequency asli, perlu cek manual di ihsgscreener/
+    Stockbit dan silangkan sendiri dengan hasil bot ini.
 
-2. Setup Telegram Bot (gratis, 5 menit):
-   a. Di Telegram, chat ke @BotFather
-   b. Ketik /newbot, ikuti instruksi, kamu akan dapat TOKEN (contoh: 123456:ABC-DEF...)
-   c. Chat bot kamu sekali (ketik apa saja) supaya bot bisa balas ke kamu
-   d. Buka di browser: https://api.telegram.org/bot<TOKEN>/getUpdates
-      (ganti <TOKEN> dengan token kamu)
-   e. Cari angka "chat":{"id": XXXXXXX  <- ini CHAT_ID kamu
-   f. Isi TOKEN dan CHAT_ID di bagian konfigurasi di bawah
+SEMUA kategori baru ini TETAP PAKAI filter likuiditas & nilai transaksi yang
+sama seperti sebelumnya (menghindari kasus AMAG-style saham tipis).
+
+JADWAL SCAN: diatur di file GitHub Actions (.yml), BUKAN di script ini. Untuk
+swing trading, tidak perlu tiap 30 menit - lihat rekomendasi di README/pesan
+terakhir dari Claude soal ini (misal: 2x/hari jam 10:30 & 14:30 WIB).
 ============================================================================
 """
 
@@ -40,95 +40,69 @@ import os
 import warnings
 from datetime import datetime, timedelta, timezone
 
-warnings.filterwarnings("ignore")  # supaya FutureWarning yfinance tidak memenuhi layar
+warnings.filterwarnings("ignore")
 
 
 def waktu_wib():
-    """Waktu WIB (UTC+7), dihitung manual dari UTC - tidak bergantung pada
-    database timezone sistem (lebih aman untuk server seperti GitHub Actions)"""
     return datetime.now(timezone.utc) + timedelta(hours=7)
 
 
 # ============================================================
-# 1. KONFIGURASI - WAJIB DIISI
+# 1. KONFIGURASI
 # ============================================================
 
-# Token & chat_id diambil dari environment variable (GitHub Secrets) kalau ada,
-# kalau tidak ada (misal saat test manual di Colab), pakai nilai default di bawah.
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN", "ISI_TOKEN_BOT_KAMU_DISINI")
 TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "ISI_CHAT_ID_KAMU_DISINI")
 
-# --- FILTER LIKUIDITAS ---
-# Menyaring saham "gocap"/tidak likuid yang bisa memicu sinyal palsu
-MIN_HARGA = 50               # abaikan saham di bawah harga ini
-MIN_VOLUME_HARIAN = 100000   # abaikan saham dengan rata-rata volume < ini (lembar/hari)
+MIN_HARGA = 50
+MIN_VOLUME_HARIAN = 100000
+MIN_NILAI_TRANSAKSI_HARIAN = 2_000_000_000
 
-# Filter tambahan berbasis NILAI transaksi (Rupiah), bukan cuma jumlah lembar.
-# Ini penting karena saham murah dengan volume lembar besar tapi nilai Rupiah
-# kecil paling rawan "dipoles" candle-nya (closing dipertahankan tinggi oleh
-# pemain besar sambil pelan-pelan distribusi) - persis kasus false positive
-# akumulasi yang perlu disaring dari kategori CMF/Akumulasi.
-MIN_NILAI_TRANSAKSI_HARIAN = 2_000_000_000  # rata-rata 20 hari, dalam Rupiah
-
-DAFTAR_SAHAM_FILE = "Daftar_Saham_Idx.csv"  # file CSV yang kamu upload
-DAFTAR_SAHAM_KOLOM = "Kode"                 # nama kolom yang berisi kode saham
-
-# Kalau belum punya file lengkap, bisa pakai daftar manual dulu (contoh saham likuid + grup Haji Isam)
-GUNAKAN_DAFTAR_MANUAL_DULU = False  # set False supaya scan pakai daftar dari file CSV
+DAFTAR_SAHAM_FILE = "Daftar_Saham_Idx.csv"
+DAFTAR_SAHAM_KOLOM = "Kode"
+GUNAKAN_DAFTAR_MANUAL_DULU = False
 DAFTAR_MANUAL = [
     "BBCA", "BBRI", "BMRI", "BBNI", "TLKM", "ASII", "UNVR", "ICBP", "INDF",
     "ANTM", "MDKA", "INKP", "TPIA", "BRPT", "CUAN", "AMMN", "ADRO", "PTBA",
-    "TEBE", "JARR", "PGUN", "DEWA", "ELPI", "BNBR", "RAJA", "SHIP", "GEMS",
-    "MBMA", "NCKL", "PANI", "BREN", "BRMS", "TINS", "MEDC", "PGAS", "AKRA",
+    "GEMS", "MBMA", "NCKL", "PANI", "BREN", "BRMS", "TINS", "MEDC", "PGAS", "AKRA",
 ]
 
+# --- Confluence lama (Stoch + Supertrend + BB) ---
 STOCH_K, STOCH_SMOOTH, STOCH_D = 6, 3, 3
-STOCH_OVERSOLD = 20
-
 ST_ATR_PERIOD, ST_MULTIPLIER = 10, 1
-
 BB_PERIOD, BB_STD = 20, 2
 BB_LOWER_THRESHOLD_PCT = 1.0
+MIN_SKOR_ALERT = 3
 
 VOL_SPIKE_MULTIPLIER = 3.0
 VOL_LOOKBACK = 20
+EARLY_VOL_MULTIPLIER = 2.5
+EARLY_MAX_KENAIKAN_PCT = 8
+EARLY_MIN_KENAIKAN_PCT = -5
 
-# --- DETEKSI DINI ---
-# Menangkap saham yang volume-nya melonjak TAPI harga belum bergerak jauh -
-# indikasi akumulasi awal, sebelum breakout harga terjadi (bukan setelah telat)
-EARLY_VOL_MULTIPLIER = 2.5     # volume naik minimal 2.5x rata-rata
-EARLY_MAX_KENAIKAN_PCT = 8     # tapi harga masih naik di bawah 8% (belum "telat")
-EARLY_MIN_KENAIKAN_PCT = -5    # dan tidak sedang jatuh tajam (turun lebih dari 5%)
+# --- CMF Akumulasi (DIREVISI - wajib harga & volume naik, bukan flat) ---
+CMF_PERIOD = 20
+CMF_THRESHOLD = 0.1
+KONFIRMASI_LOOKBACK = 5          # cek kenaikan harga N hari terakhir
+KONFIRMASI_MIN_KENAIKAN_PCT = 2  # harga wajib naik minimal segini % (bukan flat)
+KONFIRMASI_MIN_VOL_RATIO = 1.5   # volume wajib di atas rata-rata segini x
 
-# --- AKUMULASI DIAM-DIAM via OBV ---
-# Deteksi OBV naik signifikan sementara harga masih relatif flat -
-# proxy gratis untuk "ada yang mengumpulkan barang" tanpa perlu data broker
-OBV_LOOKBACK = 15             # bandingkan OBV hari ini vs N hari lalu
-OBV_MAX_HARGA_FLAT_PCT = 5    # harga dianggap "masih flat" kalau perubahan < ini
+# --- Stochastic + MA Golden Cross bersamaan (BARU) ---
+MA_FAST_PERIOD = 6    # selaras dengan periode Stochastic (6,3,3)
+MA_SLOW_PERIOD = 18   # 3x MA_FAST - rasio umum untuk golden cross jangka pendek
+GUNAKAN_EMA = True    # True = Exponential MA, False = Simple MA
 
-# --- CMF & A/D LINE (baru) ---
-# Versi lebih akurat dari OBV: mempertimbangkan POSISI closing di dalam
-# range High-Low hari itu, bukan cuma arah close vs close kemarin.
-CMF_PERIOD = 20               # jumlah hari untuk hitung rata-rata CMF
-CMF_THRESHOLD = 0.1           # di atas ini dianggap tekanan beli bersih kuat
-AD_LOOKBACK = 15              # sama seperti OBV_LOOKBACK, untuk divergence
-AD_MAX_HARGA_FLAT_PCT = 5
+# --- Ichimoku Ringkas (BARU - 3 syarat, Chikou Span dibuang karena paling lambat) ---
+TENKAN_PERIOD, KIJUN_PERIOD, SENKOU_B_PERIOD, DISPLACEMENT = 9, 26, 52, 26
 
-# --- ARA DETECTOR (baru) ---
-# Mendeteksi saham yang closing KEMARIN di/dekat batas Auto Reject Atas.
-# Sifatnya retrospektif (data harian), bukan real-time intraday.
-TOLERANSI_ARA_PCT = 1.5          # dianggap "kena ARA" kalau >= (batas - toleransi)
-AMBANG_MENDEKATI_ARA_PCT = 5.0   # dianggap "mendekati ARA" kalau masih segini % di bawah batas
+# --- MACD Histogram Divergence + Filter Rezim (BARU - hasil backtest terbaik) ---
+DIVERGENCE_LOOKBACK = 10
+REZIM_MA_IHSG = 100
 
-MIN_SKOR_ALERT = 3   # perketat: wajib SEMUA indikator (Stoch+Supertrend+BB) sejalan, bukan cuma 2 dari 3
-
-# --- PERSISTENSI SINYAL ---
-# Sinyal yang muncul 2 hari scan berturut-turut jauh lebih bisa dipercaya
-# daripada yang muncul sekali lalu hilang. File CSV hasil scan kemarin
-# dipakai sebagai pembanding otomatis.
-FOLDER_HASIL_SCAN = "."  # folder tempat file full_scan_*.csv disimpan
+# --- Persistensi sinyal ---
+FOLDER_HASIL_SCAN = "."
 LOOKBACK_DAYS = "6mo"
-JEDA_ANTAR_REQUEST = 0.3   # detik, supaya tidak kena rate-limit yfinance
+JEDA_ANTAR_REQUEST = 0.3
 
 
 # ============================================================
@@ -185,204 +159,174 @@ def calculate_bollinger(df, period=20, std_mult=2):
     return mid + std_mult * std, mid, mid - std_mult * std
 
 
-def calculate_obv(df):
-    """On-Balance Volume - proxy gratis untuk deteksi akumulasi/distribusi
-    tanpa perlu data broker. Naik terus = ada tekanan beli kumulatif."""
-    arah = np.sign(df["Close"].diff()).fillna(0)
-    obv = (arah * df["Volume"]).cumsum()
-    return obv
-
-
 def calculate_money_flow_multiplier(df):
-    """Posisi closing price di dalam range High-Low.
-    +1 = closing di High (tekanan beli maksimal)
-    -1 = closing di Low (tekanan jual maksimal)
-     0 = closing di tengah (netral)"""
     high, low, close = df["High"], df["Low"], df["Close"]
-    range_hl = (high - low).replace(0, np.nan)  # hindari divide-by-zero saat High==Low
+    range_hl = (high - low).replace(0, np.nan)
     mfm = ((close - low) - (high - close)) / range_hl
     return mfm.fillna(0)
 
 
 def calculate_cmf(df, period=20):
-    """Chaikin Money Flow - rata-rata tekanan beli/jual selama N hari,
-    dibobotkan volume. Range -1 sampai +1. Lebih akurat dari OBV karena
-    mempertimbangkan posisi closing di dalam range harian, bukan cuma
-    arah close vs close kemarin."""
     mfm = calculate_money_flow_multiplier(df)
     mfv = mfm * df["Volume"]
-    cmf = mfv.rolling(window=period).sum() / df["Volume"].rolling(window=period).sum()
-    return cmf
+    return mfv.rolling(window=period).sum() / df["Volume"].rolling(window=period).sum()
 
 
-def calculate_ad_line(df):
-    """Accumulation/Distribution Line - versi OBV yang dibobotkan posisi
-    closing. Kumulatif seperti OBV, dibaca dari TRENnya (naik terus vs
-    mendatar/turun), bukan angka absolutnya."""
-    mfm = calculate_money_flow_multiplier(df)
-    mfv = mfm * df["Volume"]
-    return mfv.cumsum()
+def calculate_macd(df, fast=12, slow=26, signal=9):
+    ema_fast = df["Close"].ewm(span=fast, adjust=False).mean()
+    ema_slow = df["Close"].ewm(span=slow, adjust=False).mean()
+    macd_line = ema_fast - ema_slow
+    signal_line = macd_line.ewm(span=signal, adjust=False).mean()
+    return macd_line, signal_line, macd_line - signal_line
 
 
-def get_batas_ara(harga_acuan):
-    """Kembalikan persentase batas ARA sesuai tingkatan harga acuan
-    (harga penutupan hari sebelumnya)."""
-    if harga_acuan < 200:
-        return 35.0
-    elif harga_acuan <= 5000:
-        return 25.0
-    else:
-        return 20.0
-
-
-def cek_status_ara(harga_acuan, harga_close_hari_ini):
-    """Bandingkan closing hari ini terhadap harga acuan (closing kemarin)
-    dan tentukan status ARA-nya.
-
-    Catatan keterbatasan: saham baru IPO beberapa hari pertama punya aturan
-    ARA berbeda dan tidak ditangani khusus di sini - kalau bot menandai
-    saham yang belum lama listing sebagai ARA/mendekati ARA secara keliru,
-    itu sumbernya. Filter len(df) minimal di analyze_ticker membantu
-    mengurangi ini."""
-    if harga_acuan <= 0:
-        return {"persen_kenaikan": 0, "batas_ara": 0, "kena_ara": False, "mendekati_ara": False}
-
-    persen_kenaikan = ((harga_close_hari_ini - harga_acuan) / harga_acuan) * 100
-    batas = get_batas_ara(harga_acuan)
-
-    kena_ara = persen_kenaikan >= (batas - TOLERANSI_ARA_PCT)
-    mendekati_ara = (not kena_ara) and (persen_kenaikan >= (batas - AMBANG_MENDEKATI_ARA_PCT))
-
+def calculate_ichimoku(df):
+    high, low, close = df["High"], df["Low"], df["Close"]
+    tenkan = (high.rolling(TENKAN_PERIOD).max() + low.rolling(TENKAN_PERIOD).min()) / 2
+    kijun = (high.rolling(KIJUN_PERIOD).max() + low.rolling(KIJUN_PERIOD).min()) / 2
+    senkou_a_raw = (tenkan + kijun) / 2
+    senkou_b_raw = (high.rolling(SENKOU_B_PERIOD).max() + low.rolling(SENKOU_B_PERIOD).min()) / 2
     return {
-        "persen_kenaikan": round(persen_kenaikan, 2),
-        "batas_ara": batas,
-        "kena_ara": kena_ara,
-        "mendekati_ara": mendekati_ara,
+        "tenkan": tenkan, "kijun": kijun,
+        "senkou_a_raw": senkou_a_raw, "senkou_b_raw": senkou_b_raw,
+        "senkou_a_plotted": senkou_a_raw.shift(DISPLACEMENT),
+        "senkou_b_plotted": senkou_b_raw.shift(DISPLACEMENT),
     }
 
 
 # ============================================================
-# 3. AMBIL DAFTAR SAHAM
+# 3. REZIM IHSG (dihitung SEKALI per scan, bukan per saham)
+# ============================================================
+
+def hitung_rezim_ihsg():
+    try:
+        df_ihsg = yf.download("^JKSE", period=LOOKBACK_DAYS, progress=False)
+        if isinstance(df_ihsg.columns, pd.MultiIndex):
+            df_ihsg.columns = df_ihsg.columns.get_level_values(0)
+        if df_ihsg.empty or len(df_ihsg) < REZIM_MA_IHSG:
+            # Kalau data IHSG tidak cukup panjang (misal LOOKBACK_DAYS terlalu pendek
+            # untuk MA100), ambil histori lebih panjang khusus untuk IHSG
+            df_ihsg = yf.download("^JKSE", period="1y", progress=False)
+            if isinstance(df_ihsg.columns, pd.MultiIndex):
+                df_ihsg.columns = df_ihsg.columns.get_level_values(0)
+        ma = df_ihsg["Close"].rolling(REZIM_MA_IHSG).mean()
+        uptrend = df_ihsg["Close"] > ma
+        rezim_sekarang = bool(uptrend.iloc[-1]) if len(uptrend) > 0 and pd.notna(uptrend.iloc[-1]) else False
+        return uptrend, rezim_sekarang
+    except Exception as e:
+        print(f"Gagal hitung rezim IHSG: {e} - anggap TIDAK uptrend (aman/konservatif)")
+        return pd.Series(dtype=bool), False
+
+
+# ============================================================
+# 4. AMBIL DAFTAR SAHAM
 # ============================================================
 
 def get_watchlist():
     if GUNAKAN_DAFTAR_MANUAL_DULU:
         print(f"Menggunakan daftar manual: {len(DAFTAR_MANUAL)} saham")
         return [f"{kode}.JK" for kode in DAFTAR_MANUAL]
-    else:
-        try:
-            # File CSV yang diupload dibaca langsung
-            df_saham = pd.read_csv(DAFTAR_SAHAM_FILE)
-            kode_list = df_saham[DAFTAR_SAHAM_KOLOM].astype(str).str.strip().tolist()
-            kode_list = [k for k in kode_list if k and k.lower() != "nan"]
-            print(f"Berhasil load {len(kode_list)} saham dari {DAFTAR_SAHAM_FILE}")
-            return [f"{kode}.JK" for kode in kode_list]
-        except Exception as e:
-            print(f"Gagal load file ({e}), fallback ke daftar manual")
-            return [f"{kode}.JK" for kode in DAFTAR_MANUAL]
+    try:
+        df_saham = pd.read_csv(DAFTAR_SAHAM_FILE)
+        kode_list = df_saham[DAFTAR_SAHAM_KOLOM].astype(str).str.strip().tolist()
+        kode_list = [k for k in kode_list if k and k.lower() != "nan"]
+        print(f"Berhasil load {len(kode_list)} saham dari {DAFTAR_SAHAM_FILE}")
+        return [f"{kode}.JK" for kode in kode_list]
+    except Exception as e:
+        print(f"Gagal load file ({e}), fallback ke daftar manual")
+        return [f"{kode}.JK" for kode in DAFTAR_MANUAL]
 
 
 # ============================================================
-# 4. ANALISIS PER SAHAM
+# 5. ANALISIS PER SAHAM
 # ============================================================
 
-def analyze_ticker(ticker):
+def analyze_ticker(ticker, ihsg_rezim_sekarang):
     try:
         df = yf.download(ticker, period=LOOKBACK_DAYS, progress=False)
         if df.empty or len(df) < 60:
             return None
-
         if isinstance(df.columns, pd.MultiIndex):
             df.columns = df.columns.get_level_values(0)
 
         df["Stoch_K"], df["Stoch_D"] = calculate_stochastic(df, STOCH_K, STOCH_SMOOTH, STOCH_D)
         df["Supertrend"], df["ST_Direction"] = calculate_supertrend(df, ST_ATR_PERIOD, ST_MULTIPLIER)
         df["BB_upper"], df["BB_mid"], df["BB_lower"] = calculate_bollinger(df, BB_PERIOD, BB_STD)
-        df["Vol_avg"] = df["Volume"].rolling(window=VOL_LOOKBACK).mean()
-        df["OBV"] = calculate_obv(df)
         df["CMF"] = calculate_cmf(df, CMF_PERIOD)
-        df["AD"] = calculate_ad_line(df)
+        df["Vol_avg"] = df["Volume"].rolling(window=VOL_LOOKBACK).mean()
+
+        if GUNAKAN_EMA:
+            df["MA_Fast"] = df["Close"].ewm(span=MA_FAST_PERIOD, adjust=False).mean()
+            df["MA_Slow"] = df["Close"].ewm(span=MA_SLOW_PERIOD, adjust=False).mean()
+        else:
+            df["MA_Fast"] = df["Close"].rolling(MA_FAST_PERIOD).mean()
+            df["MA_Slow"] = df["Close"].rolling(MA_SLOW_PERIOD).mean()
+
+        macd_line, macd_signal, macd_hist = calculate_macd(df)
+        df["MACD_Hist"] = macd_hist
+
+        ich = calculate_ichimoku(df)
 
         latest, prev = df.iloc[-1], df.iloc[-2]
 
-        # --- Filter likuiditas: skip saham gocap/tidak likuid ---
+        # --- Filter likuiditas UNIVERSAL (semua kategori) ---
         avg_vol_20 = df["Volume"].tail(20).mean()
         if latest["Close"] < MIN_HARGA or avg_vol_20 < MIN_VOLUME_HARIAN:
             return None
-
-        # --- Filter nilai transaksi (Rupiah) - gerbang UNIVERSAL, bukan cuma akumulasi ---
-        # Saham dengan nilai transaksi kecil gampang "dipoles" candle-nya (closing
-        # dipertahankan tinggi oleh modal kecil sambil pelan-pelan distribusi -
-        # lihat kasus AMAG). Sekarang saham seperti ini di-skip dari SEMUA
-        # kategori (Confluence Kuat, Momentum, Akumulasi, dst), bukan cuma
-        # dinonaktifkan sinyal CMF/OBV-nya saja seperti versi sebelumnya.
         nilai_transaksi_20 = (df["Close"].tail(20) * df["Volume"].tail(20)).mean()
         if nilai_transaksi_20 < MIN_NILAI_TRANSAKSI_HARIAN:
             return None
 
+        # ---------- KATEGORI 1: Confluence Kuat (lama) ----------
         stoch_golden_cross = (prev["Stoch_K"] <= prev["Stoch_D"]) and (latest["Stoch_K"] > latest["Stoch_D"])
         supertrend_bullish = latest["ST_Direction"] == 1
         supertrend_baru_hijau = (prev["ST_Direction"] == -1) and (latest["ST_Direction"] == 1)
-
         jarak_lower_pct = ((latest["Close"] - latest["BB_lower"]) / latest["BB_lower"]) * 100
         di_lower_band = jarak_lower_pct <= BB_LOWER_THRESHOLD_PCT
+        skor_confluence = sum([stoch_golden_cross, supertrend_bullish, di_lower_band])
+        confluence_kuat = skor_confluence >= MIN_SKOR_ALERT
 
+        # ---------- KATEGORI 2: Volume/Momentum & Deteksi Dini (lama) ----------
         vol_ratio = latest["Volume"] / latest["Vol_avg"] if latest["Vol_avg"] > 0 else 0
         volume_alert = vol_ratio >= VOL_SPIKE_MULTIPLIER
-
-        # Deteksi "chart naik signifikan" - perubahan harga 5 hari terakhir
         harga_5hari_lalu = df["Close"].iloc[-6] if len(df) > 6 else df["Close"].iloc[0]
         kenaikan_5hari_pct = ((latest["Close"] - harga_5hari_lalu) / harga_5hari_lalu) * 100
-        chart_naik_signifikan = kenaikan_5hari_pct >= 15  # naik >=15% dalam 5 hari dianggap signifikan
+        chart_naik_signifikan = kenaikan_5hari_pct >= 15
+        deteksi_dini = (vol_ratio >= EARLY_VOL_MULTIPLIER) and (EARLY_MIN_KENAIKAN_PCT <= kenaikan_5hari_pct <= EARLY_MAX_KENAIKAN_PCT)
 
-        # --- Deteksi Dini: volume melonjak TAPI harga belum bergerak jauh ---
-        deteksi_dini = (
-            vol_ratio >= EARLY_VOL_MULTIPLIER
-            and EARLY_MIN_KENAIKAN_PCT <= kenaikan_5hari_pct <= EARLY_MAX_KENAIKAN_PCT
-        )
-
-        # --- Akumulasi Diam-diam: OBV naik signifikan, harga masih flat ---
-        akumulasi_obv = False
-        if len(df) > OBV_LOOKBACK:
-            obv_now = latest["OBV"]
-            obv_dulu = df["OBV"].iloc[-(OBV_LOOKBACK + 1)]
-            harga_dulu = df["Close"].iloc[-(OBV_LOOKBACK + 1)]
-            harga_flat_pct = ((latest["Close"] - harga_dulu) / harga_dulu) * 100
-            obv_naik = obv_now > obv_dulu
-            harga_masih_flat = abs(harga_flat_pct) <= OBV_MAX_HARGA_FLAT_PCT
-            akumulasi_obv = obv_naik and harga_masih_flat
-        else:
-            harga_flat_pct = 0
-
-        # --- CMF Bullish: tekanan beli bersih kuat dalam N hari terakhir ---
+        # ---------- KATEGORI 3: CMF Akumulasi Terkonfirmasi (DIREVISI) ----------
         cmf_bullish = latest["CMF"] > CMF_THRESHOLD
+        harga_naik_konfirmasi = False
+        if len(df) > KONFIRMASI_LOOKBACK:
+            harga_dulu_k = df["Close"].iloc[-(KONFIRMASI_LOOKBACK + 1)]
+            kenaikan_konfirmasi_pct = ((latest["Close"] - harga_dulu_k) / harga_dulu_k) * 100
+            harga_naik_konfirmasi = kenaikan_konfirmasi_pct >= KONFIRMASI_MIN_KENAIKAN_PCT
+        else:
+            kenaikan_konfirmasi_pct = 0
+        volume_naik_konfirmasi = vol_ratio >= KONFIRMASI_MIN_VOL_RATIO
+        cmf_akumulasi_terkonfirmasi = cmf_bullish and harga_naik_konfirmasi and volume_naik_konfirmasi
 
-        # --- A/D Divergence: mirip akumulasi_obv, tapi pakai A/D Line yang
-        # lebih akurat karena mempertimbangkan posisi closing, bukan cuma arah ---
-        ad_divergence = False
-        harga_flat_pct_ad = 0
-        if len(df) > AD_LOOKBACK:
-            ad_now = latest["AD"]
-            ad_dulu = df["AD"].iloc[-(AD_LOOKBACK + 1)]
-            harga_dulu_ad = df["Close"].iloc[-(AD_LOOKBACK + 1)]
-            harga_flat_pct_ad = ((latest["Close"] - harga_dulu_ad) / harga_dulu_ad) * 100
-            ad_naik = ad_now > ad_dulu
-            harga_masih_flat_ad = abs(harga_flat_pct_ad) <= AD_MAX_HARGA_FLAT_PCT
-            ad_divergence = ad_naik and harga_masih_flat_ad
+        # ---------- KATEGORI 4 (BARU): Stochastic + MA Golden Cross BERSAMAAN ----------
+        ma_golden_cross = (prev["MA_Fast"] <= prev["MA_Slow"]) and (latest["MA_Fast"] > latest["MA_Slow"])
+        double_golden_cross = stoch_golden_cross and ma_golden_cross
 
-        # Sinyal paling kuat: OBV, A/D Line, DAN CMF saat ini SEMUA sejalan.
-        # Sebelumnya cuma syarat OBV+A/D - tapi itu bisa lolos walau CMF
-        # sekarang sudah negatif (artinya akumulasi 15 hari lalu, tapi
-        # belakangan ini malah mulai didistribusi). Menambahkan cmf_bullish
-        # di sini mencegah label "Terkonfirmasi" muncul berbarengan dengan
-        # CMF negatif yang membingungkan.
-        akumulasi_terkonfirmasi = akumulasi_obv and ad_divergence and cmf_bullish
+        # ---------- KATEGORI 5 (BARU): Ichimoku Ringkas (3 syarat) ----------
+        ichimoku_syarat1 = (latest["Close"] > ich["senkou_a_plotted"].iloc[-1]) and \
+                           (latest["Close"] > ich["senkou_b_plotted"].iloc[-1])
+        ichimoku_syarat2 = ich["tenkan"].iloc[-1] > ich["kijun"].iloc[-1]
+        ichimoku_syarat3 = ich["senkou_a_raw"].iloc[-1] > ich["senkou_b_raw"].iloc[-1]
+        ichimoku_ringkas = ichimoku_syarat1 and ichimoku_syarat2 and ichimoku_syarat3
 
-        # --- ARA Detector: closing hari ini vs closing kemarin ---
-        status_ara = cek_status_ara(prev["Close"], latest["Close"])
+        # ---------- KATEGORI 6 (BARU): MACD Histogram Divergence + Filter Rezim ----------
+        macd_divergence = False
+        if len(df) > DIVERGENCE_LOOKBACK:
+            harga_turun_div = latest["Close"] < df["Close"].iloc[-(DIVERGENCE_LOOKBACK + 1)]
+            hist_naik_div = latest["MACD_Hist"] > df["MACD_Hist"].iloc[-(DIVERGENCE_LOOKBACK + 1)]
+            hist_negatif = latest["MACD_Hist"] < 0
+            macd_divergence = harga_turun_div and hist_naik_div and hist_negatif
+        macd_divergence_bull_regime = macd_divergence and ihsg_rezim_sekarang
 
-        skor = sum([stoch_golden_cross, supertrend_bullish, di_lower_band])
-
+        # ---------- Susun keterangan ----------
         keterangan = []
         if stoch_golden_cross:
             keterangan.append("Stoch golden cross")
@@ -398,37 +342,33 @@ def analyze_ticker(ticker):
             keterangan.append(f"Harga naik {kenaikan_5hari_pct:.0f}% (5 hari)")
         if deteksi_dini:
             keterangan.append(f"🔍 DETEKSI DINI: vol {vol_ratio:.1f}x, harga baru {kenaikan_5hari_pct:+.1f}%")
-        if akumulasi_obv:
-            keterangan.append(f"🤫 AKUMULASI OBV: naik {OBV_LOOKBACK}hr, harga flat {harga_flat_pct:+.1f}%")
-        if cmf_bullish:
-            keterangan.append(f"CMF {latest['CMF']:.2f} (tekanan beli kuat)")
-        if akumulasi_terkonfirmasi:
-            keterangan.append("✅ AKUMULASI TERKONFIRMASI (OBV + A/D Line sejalan)")
-        elif ad_divergence:
-            keterangan.append(f"A/D Divergence: naik {AD_LOOKBACK}hr, harga flat {harga_flat_pct_ad:+.1f}%")
-        if status_ara["kena_ara"]:
-            keterangan.append(f"🚀 ARA! naik {status_ara['persen_kenaikan']}% (batas {status_ara['batas_ara']}%)")
-        elif status_ara["mendekati_ara"]:
-            keterangan.append(f"Mendekati ARA: naik {status_ara['persen_kenaikan']}% (batas {status_ara['batas_ara']}%)")
+        if cmf_akumulasi_terkonfirmasi:
+            keterangan.append(f"CMF {latest['CMF']:.2f} + harga naik {kenaikan_konfirmasi_pct:.1f}% + vol {vol_ratio:.1f}x")
+        if double_golden_cross:
+            tipe_ma = "EMA" if GUNAKAN_EMA else "SMA"
+            keterangan.append(f"⚡ Stoch+{tipe_ma}({MA_FAST_PERIOD}/{MA_SLOW_PERIOD}) Golden Cross bersamaan")
+        if ichimoku_ringkas:
+            keterangan.append("☁️ Ichimoku Ringkas (3 syarat)")
+        if macd_divergence_bull_regime:
+            keterangan.append("📈 MACD Histogram Divergence + Rezim Bullish")
+        elif macd_divergence:
+            keterangan.append("MACD Histogram Divergence (rezim IHSG belum bullish)")
 
         return {
             "Ticker": ticker.replace(".JK", ""),
             "Harga": round(latest["Close"], 0),
-            "Skor": skor,
-            "Nilai_Transaksi_20hr": round(nilai_transaksi_20, 0),
+            "Skor_Confluence": skor_confluence,
+            "Confluence_Kuat": confluence_kuat,
             "Vol_ratio": round(vol_ratio, 2),
             "Kenaikan_5hari_%": round(kenaikan_5hari_pct, 1),
             "Volume_Alert": volume_alert,
             "Chart_Naik_Signifikan": chart_naik_signifikan,
             "Deteksi_Dini": deteksi_dini,
-            "Akumulasi_OBV": akumulasi_obv,
             "CMF": round(latest["CMF"], 3) if pd.notna(latest["CMF"]) else 0,
-            "CMF_Bullish": cmf_bullish,
-            "AD_Divergence": ad_divergence,
-            "Akumulasi_Terkonfirmasi": akumulasi_terkonfirmasi,
-            "Persen_Kenaikan": status_ara["persen_kenaikan"],
-            "Kena_ARA": status_ara["kena_ara"],
-            "Mendekati_ARA": status_ara["mendekati_ara"],
+            "CMF_Akumulasi_Terkonfirmasi": cmf_akumulasi_terkonfirmasi,
+            "Double_Golden_Cross": double_golden_cross,
+            "Ichimoku_Ringkas": ichimoku_ringkas,
+            "MACD_Divergence_Bull_Regime": macd_divergence_bull_regime,
             "Keterangan": " | ".join(keterangan) if keterangan else "-",
         }
 
@@ -437,68 +377,56 @@ def analyze_ticker(ticker):
 
 
 # ============================================================
-# 5. KIRIM ALERT KE TELEGRAM
+# 6. TELEGRAM & PERSISTENSI
 # ============================================================
 
 def kirim_telegram(pesan):
     if TELEGRAM_TOKEN == "ISI_TOKEN_BOT_KAMU_DISINI":
-        print("[INFO] Telegram belum dikonfigurasi, alert hanya ditampilkan di sini:\n")
+        print("[INFO] Telegram belum dikonfigurasi:\n")
         print(pesan)
         return
-
-    # Telegram membatasi maksimal 4096 karakter per pesan - potong jadi
-    # beberapa bagian kalau kepanjangan, supaya tidak gagal kirim total
-    BATAS_KARAKTER = 4000  # kasih sedikit margin dari batas resmi 4096
+    BATAS_KARAKTER = 4000
     potongan = [pesan[i:i + BATAS_KARAKTER] for i in range(0, len(pesan), BATAS_KARAKTER)] or [pesan]
-
     for i, bagian in enumerate(potongan):
         try:
             url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
             resp = requests.post(url, data={"chat_id": TELEGRAM_CHAT_ID, "text": bagian, "parse_mode": "HTML"}, timeout=15)
             if resp.status_code != 200:
-                print(f"[ERROR] Gagal kirim Telegram (bagian {i+1}/{len(potongan)}): "
-                      f"status {resp.status_code} - {resp.text}")
+                print(f"[ERROR] Gagal kirim Telegram (bagian {i+1}/{len(potongan)}): {resp.status_code} - {resp.text}")
             else:
                 print(f"[OK] Pesan Telegram bagian {i+1}/{len(potongan)} terkirim.")
         except Exception as e:
             print(f"[ERROR] Exception saat kirim Telegram (bagian {i+1}/{len(potongan)}): {e}")
 
 
-def get_ticker_persisten(kategori_hari_ini, nama_kategori):
-    """Bandingkan daftar ticker kategori tertentu hari ini dengan hasil
-    scan TERAKHIR yang tersimpan (file full_scan_*.csv sebelumnya).
-    Return set ticker yang muncul di KEDUA scan (dianggap lebih meyakinkan
-    karena tidak cuma noise sehari)."""
+def get_ticker_persisten(kategori_hari_ini, nama_kolom):
     import glob
-
     file_lama = sorted(glob.glob(os.path.join(FOLDER_HASIL_SCAN, "full_scan_*.csv")))
     if not file_lama:
-        return set()  # belum ada riwayat scan sebelumnya
-
+        return set()
     try:
-        df_kemarin = pd.read_csv(file_lama[-1])  # scan terakhir yang tersimpan
-        if nama_kategori == "confluence":
-            ticker_kemarin = set(df_kemarin[df_kemarin["Skor"] >= MIN_SKOR_ALERT]["Ticker"])
-        elif nama_kategori == "akumulasi_terkonfirmasi":
-            ticker_kemarin = set(df_kemarin[df_kemarin["Akumulasi_Terkonfirmasi"]]["Ticker"])
-        else:
-            return set()
+        df_kemarin = pd.read_csv(file_lama[-1])
+        ticker_kemarin = set(df_kemarin[df_kemarin[nama_kolom] == True]["Ticker"]) if nama_kolom in df_kemarin.columns else set()
         return set(kategori_hari_ini) & ticker_kemarin
     except Exception:
         return set()
 
 
 # ============================================================
-# 6. JALANKAN FULL SCAN
+# 7. JALANKAN FULL SCAN
 # ============================================================
 
 def run_full_scan():
     tickers = get_watchlist()
-    print(f"\nMemulai scan {len(tickers)} saham... (bisa beberapa menit)\n")
+    print(f"\nMemulai scan {len(tickers)} saham...\n")
+
+    print("Menghitung rezim IHSG dulu (untuk filter MACD Divergence)...")
+    _, ihsg_rezim_sekarang = hitung_rezim_ihsg()
+    print(f"Rezim IHSG saat ini: {'BULLISH (di atas MA100)' if ihsg_rezim_sekarang else 'belum bullish'}\n")
 
     hasil = []
     for i, ticker in enumerate(tickers):
-        r = analyze_ticker(ticker)
+        r = analyze_ticker(ticker, ihsg_rezim_sekarang)
         if r:
             hasil.append(r)
         time.sleep(JEDA_ANTAR_REQUEST)
@@ -511,101 +439,79 @@ def run_full_scan():
 
     df_hasil = pd.DataFrame(hasil)
 
-    # Saham dengan confluence tinggi (2-3 indikator sejalan)
-    confluence_kuat = df_hasil[df_hasil["Skor"] >= MIN_SKOR_ALERT].sort_values("Skor", ascending=False)
-
-    # Saham dengan volume alert ATAU chart naik signifikan (terlepas dari skor confluence)
+    confluence_kuat = df_hasil[df_hasil["Confluence_Kuat"]].sort_values("Skor_Confluence", ascending=False)
     momentum_alert = df_hasil[df_hasil["Volume_Alert"] | df_hasil["Chart_Naik_Signifikan"]]
-
-    # Saham Deteksi Dini: volume melonjak, harga BELUM bergerak jauh (early stage)
     deteksi_dini_alert = df_hasil[df_hasil["Deteksi_Dini"]].sort_values("Vol_ratio", ascending=False)
+    cmf_alert = df_hasil[df_hasil["CMF_Akumulasi_Terkonfirmasi"]].sort_values("CMF", ascending=False)
+    double_golden_alert = df_hasil[df_hasil["Double_Golden_Cross"]]
+    ichimoku_alert = df_hasil[df_hasil["Ichimoku_Ringkas"]]
+    macd_div_alert = df_hasil[df_hasil["MACD_Divergence_Bull_Regime"]]
 
-    # Saham Akumulasi Terkonfirmasi: OBV + A/D Line sejalan (paling kuat)
-    akumulasi_kuat_alert = df_hasil[df_hasil["Akumulasi_Terkonfirmasi"]]
-
-    # Saham Akumulasi OBV saja (fallback, masih berguna kalau A/D belum sejalan)
-    akumulasi_alert = df_hasil[df_hasil["Akumulasi_OBV"] & ~df_hasil["Akumulasi_Terkonfirmasi"]]
-
-    # Saham ARA kemarin & yang mendekati ARA
-    ara_alert = df_hasil[df_hasil["Kena_ARA"]].sort_values("Persen_Kenaikan", ascending=False)
-    mendekati_ara_alert = df_hasil[df_hasil["Mendekati_ARA"]].sort_values("Persen_Kenaikan", ascending=False)
-
-    # --- Cek persistensi vs scan sebelumnya (harus dipanggil SEBELUM file CSV baru disimpan) ---
-    persisten_confluence = get_ticker_persisten(confluence_kuat["Ticker"].tolist(), "confluence")
-    persisten_akumulasi = get_ticker_persisten(akumulasi_kuat_alert["Ticker"].tolist(), "akumulasi_terkonfirmasi")
+    persisten_confluence = get_ticker_persisten(confluence_kuat["Ticker"].tolist(), "Confluence_Kuat")
+    persisten_cmf = get_ticker_persisten(cmf_alert["Ticker"].tolist(), "CMF_Akumulasi_Terkonfirmasi")
 
     print(f"\n{'='*80}")
     print(f"HASIL FULL SCAN - {waktu_wib().strftime('%Y-%m-%d %H:%M')}")
     print(f"{'='*80}")
     print(f"Total saham dianalisis: {len(df_hasil)}")
-    print(f"Saham confluence >= {MIN_SKOR_ALERT}: {len(confluence_kuat)}")
-    print(f"Saham momentum/volume alert: {len(momentum_alert)}")
-    print(f"Saham deteksi dini: {len(deteksi_dini_alert)}")
-    print(f"Saham akumulasi terkonfirmasi (OBV+A/D): {len(akumulasi_kuat_alert)}")
-    print(f"Saham akumulasi OBV saja: {len(akumulasi_alert)}")
-    print(f"Saham ARA kemarin: {len(ara_alert)}")
-    print(f"Saham mendekati ARA: {len(mendekati_ara_alert)}\n")
+    print(f"Confluence Kuat: {len(confluence_kuat)} | Momentum: {len(momentum_alert)} | Deteksi Dini: {len(deteksi_dini_alert)}")
+    print(f"CMF Akumulasi Terkonfirmasi: {len(cmf_alert)} | Stoch+MA Golden Cross: {len(double_golden_alert)}")
+    print(f"Ichimoku Ringkas: {len(ichimoku_alert)} | MACD Div+Rezim: {len(macd_div_alert)}\n")
+
+    pesan = f"<b>SCAN IHSG v2 - {waktu_wib().strftime('%d %b %Y %H:%M')}</b>\n"
+    pesan += f"<i>Rezim IHSG: {'🟢 Bullish' if ihsg_rezim_sekarang else '🔴 Belum bullish'}</i>\n\n"
 
     if not confluence_kuat.empty:
-        print(confluence_kuat[["Ticker", "Harga", "Skor", "Keterangan"]].to_string(index=False))
-
-    # ---- Susun pesan Telegram ----
-    pesan = f"<b>SCAN IHSG - {waktu_wib().strftime('%d %b %Y %H:%M')}</b>\n\n"
-
-    if not confluence_kuat.empty:
-        pesan += "<b>Confluence Kuat (Stoch+Supertrend+BB semua sejalan):</b>\n"
+        pesan += "<b>Confluence Kuat (Stoch+Supertrend+BB):</b>\n"
         for _, row in confluence_kuat.head(10).iterrows():
             tanda = " 🔥2hr" if row["Ticker"] in persisten_confluence else ""
             pesan += f"• {row['Ticker']}{tanda} (Rp{row['Harga']:.0f}) - {row['Keterangan']}\n"
         pesan += "\n"
 
+    if not double_golden_alert.empty:
+        tipe_ma = "EMA" if GUNAKAN_EMA else "SMA"
+        pesan += f"<b>⚡ Stoch({STOCH_K},{STOCH_SMOOTH},{STOCH_D}) + {tipe_ma}({MA_FAST_PERIOD}/{MA_SLOW_PERIOD}) Golden Cross Bersamaan:</b>\n"
+        for _, row in double_golden_alert.head(10).iterrows():
+            pesan += f"• {row['Ticker']} (Rp{row['Harga']:.0f})\n"
+        pesan += "\n"
+
+    if not ichimoku_alert.empty:
+        pesan += "<b>☁️ Ichimoku Ringkas (Tenkan>Kijun, Harga>Cloud, Kumo Future Bullish):</b>\n"
+        for _, row in ichimoku_alert.head(10).iterrows():
+            pesan += f"• {row['Ticker']} (Rp{row['Harga']:.0f})\n"
+        pesan += "\n"
+
+    if not macd_div_alert.empty:
+        pesan += "<b>📈 MACD Histogram Divergence + Rezim Bullish (hasil backtest TERBAIK kita):</b>\n"
+        for _, row in macd_div_alert.head(10).iterrows():
+            pesan += f"• {row['Ticker']} (Rp{row['Harga']:.0f})\n"
+        pesan += "\n"
+    elif not ihsg_rezim_sekarang:
+        pesan += "<i>📈 MACD Divergence: tidak ada sinyal - rezim IHSG belum bullish (syarat wajib).</i>\n\n"
+
+    if not cmf_alert.empty:
+        pesan += "<b>💰 CMF Akumulasi Terkonfirmasi (harga naik + volume naik, bukan cuma teori):</b>\n"
+        for _, row in cmf_alert.head(10).iterrows():
+            tanda = " 🔥2hr" if row["Ticker"] in persisten_cmf else ""
+            pesan += f"• {row['Ticker']}{tanda} (Rp{row['Harga']:.0f}) - CMF {row['CMF']:.2f}\n"
+        pesan += "\n"
+
     if not momentum_alert.empty:
-        pesan += "<b>⚠ Volume/Momentum Alert (sudah bergerak):</b>\n"
+        pesan += "<b>⚠ Volume/Momentum Alert:</b>\n"
         for _, row in momentum_alert.head(10).iterrows():
             pesan += f"• {row['Ticker']} (Rp{row['Harga']:.0f}) - Vol {row['Vol_ratio']:.1f}x, naik {row['Kenaikan_5hari_%']:.0f}% (5hr)\n"
         pesan += "\n"
 
     if not deteksi_dini_alert.empty:
-        pesan += "<b>🔍 Deteksi Dini (volume naik, harga BELUM bergerak jauh):</b>\n"
+        pesan += "<b>🔍 Deteksi Dini:</b>\n"
         for _, row in deteksi_dini_alert.head(10).iterrows():
             pesan += f"• {row['Ticker']} (Rp{row['Harga']:.0f}) - Vol {row['Vol_ratio']:.1f}x, baru {row['Kenaikan_5hari_%']:+.1f}% (5hr)\n"
         pesan += "\n"
 
-    if not akumulasi_kuat_alert.empty:
-        pesan += "<b>✅ Akumulasi Terkonfirmasi (sudah difilter nilai transaksi ≥2M/hari):</b>\n"
-        for _, row in akumulasi_kuat_alert.head(10).iterrows():
-            tanda = " 🔥2hr" if row["Ticker"] in persisten_akumulasi else ""
-            pesan += f"• {row['Ticker']}{tanda} (Rp{row['Harga']:.0f}) - CMF {row['CMF']:.2f}\n"
-        pesan += "\n<i>🔥2hr = muncul juga di scan sebelumnya, lebih meyakinkan. Tetap bukan jaminan - CMF/OBV tidak bisa membedakan akumulasi asli vs distribusi absorptif (lihat catatan bawah).</i>\n\n"
-
-    if not akumulasi_alert.empty:
-        pesan += (f"<b>🤫 Akumulasi OBV (belum lolos filter nilai transaksi/A-D, harga flat {OBV_LOOKBACK} hari):</b>\n"
-                  f"{len(akumulasi_alert)} saham - kategori paling spekulatif, cek manual dulu sebelum ikuti.\n\n")
-
-    if not ara_alert.empty:
-        pesan += "<b>🚀 ARA Kemarin (watchlist lanjutan):</b>\n"
-        for _, row in ara_alert.head(10).iterrows():
-            pesan += f"• {row['Ticker']}: +{row['Persen_Kenaikan']}% (Rp{row['Harga']:.0f})\n"
-        pesan += "\n"
-
-    if not mendekati_ara_alert.empty:
-        pesan += "<b>Mendekati ARA:</b>\n"
-        for _, row in mendekati_ara_alert.head(10).iterrows():
-            pesan += f"• {row['Ticker']}: +{row['Persen_Kenaikan']}% (Rp{row['Harga']:.0f})\n"
-        pesan += "\n"
-
-    ada_sinyal = not (confluence_kuat.empty and momentum_alert.empty and deteksi_dini_alert.empty
-                      and akumulasi_kuat_alert.empty and akumulasi_alert.empty
-                      and ara_alert.empty and mendekati_ara_alert.empty)
-
-    if ada_sinyal:
-        pesan += ("<i>Ingat: volume spike/ARA bisa lanjut naik ATAU jadi ajang distribusi. "
-                  "CMF/OBV membaca bentuk candle, BUKAN data broker asli - closing tinggi karena "
-                  "serapan agresif ritel bisa terlihat identik dengan akumulasi asli padahal itu "
-                  "distribusi (cek Trade Flow/Smart Money di sekuritas kamu untuk saham yang menarik "
-                  "sebelum eksekusi). Selalu cek berita & pakai cut-loss.</i>")
-    else:
-        pesan += "Tidak ada sinyal signifikan hari ini."
+    pesan += ("<i>PENGINGAT: dari ~20 backtest kita, TIDAK ADA kategori di atas yang terbukti "
+              "punya edge kuat setelah fee - yang terbaik (MACD Div+Rezim) cuma breakeven-ish. "
+              "Gunakan size kecil, WAJIB stop-loss disiplin, dan anggap ini latihan psikologi/"
+              "money-management, bukan sinyal pasti profit.</i>")
 
     kirim_telegram(pesan)
 
