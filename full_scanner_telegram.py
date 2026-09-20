@@ -310,12 +310,43 @@ def analyze_ticker(ticker, ihsg_rezim_sekarang):
         ma_golden_cross = (prev["MA_Fast"] <= prev["MA_Slow"]) and (latest["MA_Fast"] > latest["MA_Slow"])
         double_golden_cross = stoch_golden_cross and ma_golden_cross
 
-        # ---------- KATEGORI 5 (BARU): Ichimoku Ringkas (3 syarat) ----------
-        ichimoku_syarat1 = (latest["Close"] > ich["senkou_a_plotted"].iloc[-1]) and \
-                           (latest["Close"] > ich["senkou_b_plotted"].iloc[-1])
-        ichimoku_syarat2 = ich["tenkan"].iloc[-1] > ich["kijun"].iloc[-1]
-        ichimoku_syarat3 = ich["senkou_a_raw"].iloc[-1] > ich["senkou_b_raw"].iloc[-1]
-        ichimoku_ringkas = ichimoku_syarat1 and ichimoku_syarat2 and ichimoku_syarat3
+        # ---------- KATEGORI 5 (DIPERBAIKI): Ichimoku berbasis CROSSOVER, bukan status ----------
+        # Temuan penting dari cross-check manual ke chart: versi lama pakai STATUS
+        # ("apakah sekarang di atas") yang bikin telat masuk - sinyal baru muncul
+        # setelah reli sudah jalan beberapa hari. Diperbaiki jadi CROSSOVER (titik
+        # potong BARU hari ini), sesuai 3 syarat dari chart TradingView/Stockbit:
+        # 1. Leading Span A memotong ke ATAS Leading Span B (cikal bakal Kumo bullish)
+        # 2. Conversion Line (Tenkan) memotong ke ATAS Base Line (Kijun)
+        # 3. Lagging Span (Chikou = harga close sekarang) memotong ke ATAS harga
+        #    di posisi 26 hari lalu (mulai naik di atas chart)
+        senkou_a_prev = ich["senkou_a_raw"].iloc[-2]
+        senkou_b_prev = ich["senkou_b_raw"].iloc[-2]
+        senkou_a_now = ich["senkou_a_raw"].iloc[-1]
+        senkou_b_now = ich["senkou_b_raw"].iloc[-1]
+        kumo_cross_up = (senkou_a_prev <= senkou_b_prev) and (senkou_a_now > senkou_b_now)
+
+        tenkan_prev = ich["tenkan"].iloc[-2]
+        kijun_prev = ich["kijun"].iloc[-2]
+        tk_cross_up = (tenkan_prev <= kijun_prev) and (ich["tenkan"].iloc[-1] > ich["kijun"].iloc[-1])
+
+        if len(df) > DISPLACEMENT + 1:
+            harga_26_lalu_now = df["Close"].iloc[-(DISPLACEMENT + 1)]
+            harga_27_lalu_prev = df["Close"].iloc[-(DISPLACEMENT + 2)]
+            chikou_cross_up = (prev["Close"] <= harga_27_lalu_prev) and (latest["Close"] > harga_26_lalu_now)
+        else:
+            chikou_cross_up = False
+
+        ichimoku_ringkas = kumo_cross_up and tk_cross_up and chikou_cross_up
+        # Ketiga syarat harus persis bersamaan itu sangat ketat (jarang terjadi
+        # bareng di hari yang sama) - kalau ternyata TERLALU sedikit sinyal yang
+        # lolos, longgarkan jadi "ketiganya terjadi dalam rentang 3-5 hari
+        # terakhir" alih-alih harus PERSIS di hari yang sama.
+
+        # ---------- Cek tambahan: WARNING kalau sudah mentok upper Bollinger Band ----------
+        # Temuan dari BAJA: 3 sinyal bullish sekaligus tapi ternyata harga sudah
+        # mentok upper BB (overbought) - perlu ditandai eksplisit, bukan disembunyikan.
+        jarak_upper_pct = ((latest["Close"] - latest["BB_upper"]) / latest["BB_upper"]) * 100
+        sudah_mentok_upper_bb = jarak_upper_pct >= -1.0  # dalam 1% dari upper band atau sudah tembus
 
         # ---------- KATEGORI 6 (BARU): MACD Histogram Divergence + Filter Rezim ----------
         macd_divergence = False
@@ -348,11 +379,13 @@ def analyze_ticker(ticker, ihsg_rezim_sekarang):
             tipe_ma = "EMA" if GUNAKAN_EMA else "SMA"
             keterangan.append(f"⚡ Stoch+{tipe_ma}({MA_FAST_PERIOD}/{MA_SLOW_PERIOD}) Golden Cross bersamaan")
         if ichimoku_ringkas:
-            keterangan.append("☁️ Ichimoku Ringkas (3 syarat)")
+            keterangan.append("☁️ Ichimoku CROSSOVER (Kumo+TK+Chikou bersamaan)")
         if macd_divergence_bull_regime:
-            keterangan.append("📈 MACD Histogram Divergence + Rezim Bullish")
+            keterangan.append(f"📈 MACD Div+Rezim (harga {DIVERGENCE_LOOKBACK}hr lalu: Rp{df['Close'].iloc[-(DIVERGENCE_LOOKBACK+1)]:.0f} -> sekarang Rp{latest['Close']:.0f})")
         elif macd_divergence:
             keterangan.append("MACD Histogram Divergence (rezim IHSG belum bullish)")
+        if sudah_mentok_upper_bb:
+            keterangan.append("⚠️ SUDAH MENTOK UPPER BB (overbought, hati-hati kejar)")
 
         return {
             "Ticker": ticker.replace(".JK", ""),
@@ -369,6 +402,7 @@ def analyze_ticker(ticker, ihsg_rezim_sekarang):
             "Double_Golden_Cross": double_golden_cross,
             "Ichimoku_Ringkas": ichimoku_ringkas,
             "MACD_Divergence_Bull_Regime": macd_divergence_bull_regime,
+            "Sudah_Mentok_Upper_BB": sudah_mentok_upper_bb,
             "Keterangan": " | ".join(keterangan) if keterangan else "-",
         }
 
@@ -472,13 +506,15 @@ def run_full_scan():
         tipe_ma = "EMA" if GUNAKAN_EMA else "SMA"
         pesan += f"<b>⚡ Stoch({STOCH_K},{STOCH_SMOOTH},{STOCH_D}) + {tipe_ma}({MA_FAST_PERIOD}/{MA_SLOW_PERIOD}) Golden Cross Bersamaan:</b>\n"
         for _, row in double_golden_alert.head(10).iterrows():
-            pesan += f"• {row['Ticker']} (Rp{row['Harga']:.0f})\n"
+            tanda_ov = " ⚠️OVERBOUGHT" if row["Sudah_Mentok_Upper_BB"] else ""
+            pesan += f"• {row['Ticker']}{tanda_ov} (Rp{row['Harga']:.0f})\n"
         pesan += "\n"
 
     if not ichimoku_alert.empty:
-        pesan += "<b>☁️ Ichimoku Ringkas (Tenkan>Kijun, Harga>Cloud, Kumo Future Bullish):</b>\n"
+        pesan += "<b>☁️ Ichimoku Crossover (Kumo+Tenkan/Kijun+Chikou memotong BERSAMAAN hari ini):</b>\n"
         for _, row in ichimoku_alert.head(10).iterrows():
-            pesan += f"• {row['Ticker']} (Rp{row['Harga']:.0f})\n"
+            tanda_ov = " ⚠️OVERBOUGHT" if row["Sudah_Mentok_Upper_BB"] else ""
+            pesan += f"• {row['Ticker']}{tanda_ov} (Rp{row['Harga']:.0f})\n"
         pesan += "\n"
 
     if not macd_div_alert.empty:
