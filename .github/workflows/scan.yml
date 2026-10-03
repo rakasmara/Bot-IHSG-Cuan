@@ -1,0 +1,47 @@
+name: Scan IHSG Otomatis
+
+on:
+  # Jadwal cron bawaan GitHub DINONAKTIFKAN - sudah terbukti tidak presisi
+  # (kadang di-skip, kadang telat berjam-jam). Diganti dengan cron-job.org
+  # yang memicu lewat 'workflow_dispatch' di bawah ini dengan jauh lebih akurat.
+  #
+  # schedule:
+  #   - cron: '0,30 2-8 * * 1-5'
+  workflow_dispatch:   # dipicu oleh cron-job.org via GitHub API
+
+permissions:
+  contents: write   # PERBAIKAN: wajib ada supaya step "Commit & Push" di bawah bisa menulis ke repo
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install yfinance pandas numpy requests openpyxl
+
+      - name: Jalankan scanner
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python full_scanner_telegram.py
+
+      # PERBAIKAN PENTING: tanpa step ini, file full_scan_*.csv hanya ada di
+      # runner job ini dan hilang begitu job selesai. get_ticker_persisten()
+      # di full_scanner_telegram.py butuh file CSV dari run SEBELUMNYA untuk
+      # mendeteksi saham yang konsisten 2 hari ("🔥2hr") - tanpa file itu ada
+      # di repo, fitur tersebut tidak akan pernah berfungsi.
+      - name: Commit & Push Hasil Scan
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add full_scan_*.csv
+          git diff --staged --quiet || git commit -m "Update hasil scan [skip ci]"
+          git push
