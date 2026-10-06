@@ -1,0 +1,323 @@
+Ticker,Harga,Skor_Confluence,Confluence_Kuat,Vol_ratio,Kenaikan_5hari_%,Volume_Alert,Chart_Naik_Signifikan,Deteksi_Dini,CMF,CMF_Akumulasi_Terkonfirmasi,Double_Golden_Cross,Ichimoku_Ringkas,MACD_Divergence_Bull_Regime,Sudah_Mentok_Upper_BB,Keterangan
+AALI,8500.0,1,False,0.59,9.0,False,False,False,-0.015,False,False,False,False,False,Supertrend hijau
+ACES,324.0,0,False,0.91,-5.3,False,False,False,0.042,False,False,False,False,False,-
+AISA,118.0,0,False,0.12,1.7,False,False,False,-0.362,False,False,False,False,False,-
+AKRA,1505.0,1,False,0.65,4.9,False,False,False,-0.015,False,False,False,False,False,Supertrend hijau
+AMRT,1250.0,1,False,0.84,-5.3,False,False,False,-0.21,False,False,False,False,False,Di lower BB (0.1%)
+ANTM,3230.0,1,False,0.36,2.2,False,False,False,0.162,False,False,False,False,False,Supertrend BARU hijau
+APEX,184.0,1,False,0.44,5.1,False,False,False,-0.342,False,False,False,False,False,Supertrend hijau
+APLN,109.0,0,False,0.69,-1.8,False,False,False,-0.326,False,False,False,False,False,MACD Histogram Divergence (rezim IHSG belum bullish)
+ARNA,520.0,1,False,0.23,-1.0,False,False,False,0.471,False,False,False,False,False,Supertrend hijau
+ARTO,810.0,1,False,1.66,0.0,False,False,False,-0.291,False,False,False,False,False,Supertrend BARU hijau | MACD Histogram Divergence (rezim IHSG belum bullish)
+ASGR,2570.0,2,False,2.04,15.8,False,True,False,0.052,False,False,False,False,True,"Stoch golden cross | Supertrend hijau | Harga naik 16% (5 hari) | ⚠️ SUDAH MENTOK UPPER BB (overbought, hati-hati kejar)"
+ASII,4820.0,1,False,0.58,2.6,False,False,False,-0.291,False,False,False,False,False,Supertrend hijau
+ASSA,590.0,1,False,0.72,-0.8,False,False,False,-0.28,False,False,False,False,False,Supertrend BARU hijau
+AUTO,3380.0,1,False,1.03,2.4,False,False,False,-0.205,False,False,False,False,False,Supertrend hijau
+BBCA,6150.0,0,False,0.61,0.0,False,False,False,-0.195,False,False,False,False,False,MACD Histogram Divergence (rezim IHSG belum bullish)
+BBHI,795.0,1,False,0.12,1.3,False,False,False,0.013,False,False,False,False,False,Supertrend hijau
+BBNI,3480.0,0,False,0.38,1.2,False,False,False,-0.232,False,False,False,False,False,MACD Histogram Divergence (rezim IHSG belum bullish)
+BBRI,3140.0,0,False,0.58,-0.9,False,False,False,-0.118,False,False,False,False,False,MACD Histogram Divergence (rezim IHSG belum bullish)
+BBTN,1085.0,0,False,0.74,-0.5,False,False,False,-0.372,False,False,False,False,False,MACD Histogram Divergence (rezim IHSG belum bullish)
+BBYB,202.0,0,False,1.06,2.0,False,False,False,-0.514,False,False,False,False,False,MACD Histogram Divergence (rezim IHSG belum bullish)
+BDMN,4920.0,1,False,2.04,14.7,False,False,False,0.091,False,False,False,False,True,"Supertrend hijau | ⚠️ SUDAH MENTOK UPPER BB (overbought, hati-hati kejar)"
+BEST,128.0,1,False,1.32,10.3,False,False,False,-0.106,False,False,False,False,False,Supertrend hijau
+BFIN,930.0,0,False,0.14,0.0,False,False,False,-0.177,False,False,False,False,False,MACD Histogram Divergence (rezim IHSG belum bullish)
+BINA,4000.0,0,False,0.12,-2.2,False,False,False,0.281,False,False,False,False,False,MACD Histogram Divergence (rezim IHSG belum bullish)
+BIPI,132.0,1,False,0.82,3.1,False,False,False,-0.018,False,False,False,False,False,Stoch golden cross
+BIPP,65.0,0,False,0.37,16.1,False,True,False,-0.14,False,False,False,False,False,Harga naik 16% (5 hari)
+BJBR,765.0,1,False,0.22,0.7,False,False,False,-0.396,False,False,False,False,False,Stoch golden cross
+BJTM,510.0,1,False,0.25,-1.0,False,False,False,-0.331,False,False,False,False,False,Stoch golden cross | MACD Histogram Divergence (rezim IHSG belum bullish)
+BKDP,193.0,1,False,0.89,6.6,False,False,False,-0.068,False,False,False,False,False,Supertrend BARU hijau
+BKSL,59.0,1,False,0.42,7.3,False,False,False,-0.197,False,False,False,False,False,Supertrend BARU hijau | MACD Histogram Divergence (rezim IHSG belum bullish)
+BMRI,4120.0,1,False,0.5,2.2,False,False,False,-0.324,False,False,False,False,False,Supertrend hijau | MACD Histogram Divergence (rezim IHSG belum bullish)
+BMTR,78.0,0,False,0.75,-2.5,False,False,False,-0.2,False,False,False,False,False,-
+BNBR,77.0,1,False,0.57,5.5,False,False,False,-0.14,False,False,False,False,False,Supertrend BARU hijau | MACD Histogram Divergence (rezim IHSG belum bullish)
+BNGA,1695.0,2,False,0.32,-2.0,False,False,False,0.174,False,False,False,False,False,Stoch golden cross | Di lower BB (0.7%)
+BRMS,605.0,1,False,0.45,1.7,False,False,False,-0.033,False,False,False,False,False,Supertrend hijau
+BRPT,1495.0,1,False,0.52,3.5,False,False,False,-0.369,False,False,False,False,False,Supertrend hijau | MACD Histogram Divergence (rezim IHSG belum bullish)
+BSDE,545.0,0,False,1.4,0.0,False,False,False,-0.48,False,False,False,False,False,MACD Histogram Divergence (rezim IHSG belum bullish)
+BSSR,5150.0,2,False,0.61,2.6,False,False,False,0.344,False,False,False,False,False,Stoch golden cross | Supertrend hijau
+BULL,372.0,1,False,1.42,6.9,False,False,False,-0.124,False,False,False,False,False,Supertrend BARU hijau | MACD Histogram Divergence (rezim IHSG belum bullish)
+BUMI,186.0,1,False,0.75,5.1,False,False,False,-0.195,False,False,False,False,False,Supertrend BARU hijau
+BUVA,690.0,1,False,2.01,7.8,False,False,False,-0.122,False,False,False,False,False,Supertrend hijau
+BWPT,109.0,0,False,0.27,2.8,False,False,False,-0.353,False,False,False,False,False,MACD Histogram Divergence (rezim IHSG belum bullish)
+BYAN,13000.0,1,False,1.17,9.0,False,False,False,0.104,False,False,False,False,False,Supertrend BARU hijau
+CENT,97.0,0,False,0.35,6.6,False,False,False,-0.169,False,False,False,False,False,-
+CPIN,2950.0,0,False,0.29,-0.7,False,False,False,-0.209,False,False,False,False,False,-
+CTRA,540.0,0,False,0.63,0.0,False,False,False,-0.388,False,False,False,False,False,MACD Histogram Divergence (rezim IHSG belum bullish)
+CTTH,100.0,0,False,0.88,2.0,False,False,False,-0.211,False,False,False,False,False,-
+DEFI,98.0,1,False,0.36,14.0,False,False,False,-0.109,False,False,False,False,False,Supertrend BARU hijau
+DEWA,366.0,1,False,1.05,7.6,False,False,False,-0.164,False,False,False,False,False,Supertrend BARU hijau
+DKFT,655.0,1,False,0.62,-0.8,False,False,False,-0.042,False,False,False,False,False,Supertrend hijau
+DMAS,190.0,1,False,0.46,3.8,False,False,False,-0.031,False,False,False,False,False,Supertrend hijau
+DSFI,85.0,0,False,0.04,0.0,False,False,False,-0.114,False,False,False,False,False,-
+DSNG,1565.0,0,False,0.06,4.3,False,False,False,-0.021,False,False,False,False,False,-
+DSSA,1180.0,1,False,0.55,8.3,False,False,False,-0.06,False,False,False,False,True,"Supertrend hijau | ⚠️ SUDAH MENTOK UPPER BB (overbought, hati-hati kejar)"
+DYAN,85.0,1,False,0.12,4.9,False,False,False,-0.358,False,False,False,False,False,Supertrend hijau
+EKAD,386.0,0,False,0.25,0.0,False,False,False,-0.361,False,False,False,False,False,MACD Histogram Divergence (rezim IHSG belum bullish)
+ELSA,650.0,1,False,0.6,-5.1,False,False,False,-0.201,False,False,False,False,False,Stoch golden cross | MACD Histogram Divergence (rezim IHSG belum bullish)
+EMTK,408.0,1,False,0.52,1.5,False,False,False,-0.408,False,False,False,False,False,Supertrend BARU hijau | MACD Histogram Divergence (rezim IHSG belum bullish)
+ENRG,1060.0,0,False,0.97,8.3,False,False,False,0.03,False,False,False,False,False,-
+ERAA,625.0,1,False,0.71,5.0,False,False,False,0.056,False,False,False,False,False,Supertrend hijau
+ESSA,590.0,1,False,0.34,1.7,False,False,False,-0.153,False,False,False,False,False,Supertrend hijau | MACD Histogram Divergence (rezim IHSG belum bullish)
+ESTI,154.0,1,False,0.08,10.8,False,False,False,-0.372,False,False,False,False,False,Supertrend hijau | MACD Histogram Divergence (rezim IHSG belum bullish)
+EXCL,2390.0,1,False,0.21,0.8,False,False,False,-0.416,False,False,False,False,False,Supertrend hijau | MACD Histogram Divergence (rezim IHSG belum bullish)
+FAST,416.0,0,False,0.26,4.0,False,False,False,-0.307,False,False,False,False,False,MACD Histogram Divergence (rezim IHSG belum bullish)
+FORU,124.0,2,False,10.97,-52.7,True,False,False,-0.74,False,False,False,False,False,Stoch golden cross | Di lower BB (-106.9%) | VOLUME SPIKE 11.0x
+FPNI,535.0,1,False,0.64,8.7,False,False,False,-0.171,False,False,False,False,False,Supertrend BARU hijau
+GDST,111.0,0,False,0.16,3.7,False,False,False,0.164,False,False,False,False,False,-
+GGRM,17075.0,0,False,0.22,1.3,False,False,False,-0.353,False,False,False,False,False,MACD Histogram Divergence (rezim IHSG belum bullish)
+GIAA,51.0,1,False,0.26,-10.5,False,False,False,-0.216,False,False,False,False,False,Supertrend BARU hijau
+GJTL,1285.0,1,False,1.33,4.0,False,False,False,-0.052,False,False,False,False,False,Supertrend hijau | MACD Histogram Divergence (rezim IHSG belum bullish)
+GPRA,100.0,1,False,0.07,-2.0,False,False,False,0.162,False,False,False,False,False,Stoch golden cross | MACD Histogram Divergence (rezim IHSG belum bullish)
+GSMF,94.0,1,False,0.12,9.3,False,False,False,-0.097,False,False,False,False,False,Supertrend BARU hijau | MACD Histogram Divergence (rezim IHSG belum bullish)
+GZCO,174.0,1,False,0.35,4.8,False,False,False,-0.091,False,False,False,False,False,Supertrend BARU hijau | MACD Histogram Divergence (rezim IHSG belum bullish)
+HEXA,3540.0,0,False,0.18,-1.7,False,False,False,-0.321,False,False,False,False,False,MACD Histogram Divergence (rezim IHSG belum bullish)
+HMSP,620.0,0,False,0.39,-1.6,False,False,False,-0.429,False,False,False,False,False,MACD Histogram Divergence (rezim IHSG belum bullish)
+HRUM,855.0,1,False,0.31,-1.7,False,False,False,-0.19,False,False,False,False,False,Stoch golden cross | MACD Histogram Divergence (rezim IHSG belum bullish)
+IATA,112.0,1,False,2.64,20.4,False,True,False,-0.299,False,False,False,False,False,Supertrend BARU hijau | Harga naik 20% (5 hari)
+ICBP,6775.0,0,False,0.35,1.5,False,False,False,-0.124,False,False,False,False,False,-
+ICON,133.0,0,False,0.22,0.8,False,False,False,-0.559,False,False,False,False,False,-
+IMPC,1370.0,1,False,0.37,-3.5,False,False,False,-0.175,False,False,False,False,False,Stoch golden cross
+INCO,4310.0,0,False,0.47,0.7,False,False,False,-0.224,False,False,False,False,False,-
+INDF,6875.0,1,False,0.27,2.6,False,False,False,-0.259,False,False,False,False,False,Supertrend BARU hijau | MACD Histogram Divergence (rezim IHSG belum bullish)
+INDY,2680.0,2,False,0.53,1.9,False,False,False,-0.079,False,False,False,False,False,Stoch golden cross | Supertrend BARU hijau
+INKP,8450.0,1,False,0.42,4.6,False,False,False,-0.34,False,False,False,False,False,Supertrend BARU hijau
+INTP,5025.0,1,False,0.41,0.5,False,False,False,-0.432,False,False,False,False,False,Supertrend hijau | MACD Histogram Divergence (rezim IHSG belum bullish)
+ISAT,2230.0,0,False,0.22,-3.0,False,False,False,-0.105,False,False,False,False,False,MACD Histogram Divergence (rezim IHSG belum bullish)
+ITMG,25800.0,1,False,0.62,3.3,False,False,False,-0.113,False,False,False,False,False,Supertrend hijau
+JAWA,153.0,0,False,0.23,-10.5,False,False,False,-0.363,False,False,False,False,False,-
+JPFA,2030.0,0,False,0.44,-1.5,False,False,False,-0.23,False,False,False,False,False,-
+JSMR,2640.0,1,False,0.82,-0.8,False,False,False,-0.17,False,False,False,False,False,Supertrend BARU hijau | MACD Histogram Divergence (rezim IHSG belum bullish)
+KICI,286.0,0,False,0.1,12.6,False,False,False,-0.472,False,False,False,False,False,-
+KIJA,162.0,0,False,0.69,-1.8,False,False,False,-0.212,False,False,False,False,False,MACD Histogram Divergence (rezim IHSG belum bullish)
+KKGI,300.0,1,False,0.18,4.2,False,False,False,0.02,False,False,False,False,False,Supertrend hijau
+KLBF,755.0,1,False,0.37,4.1,False,False,False,-0.216,False,False,False,False,False,Supertrend hijau
+LAPD,77.0,0,False,0.22,-1.3,False,False,False,-0.026,False,False,False,False,False,-
+LEAD,96.0,1,False,0.34,2.1,False,False,False,-0.208,False,False,False,False,False,Stoch golden cross | MACD Histogram Divergence (rezim IHSG belum bullish)
+LPPF,1595.0,1,False,0.27,1.3,False,False,False,-0.228,False,False,False,False,False,Supertrend BARU hijau
+LSIP,1490.0,0,False,0.45,-1.0,False,False,False,-0.314,False,False,False,False,False,-
+MAPI,1490.0,1,False,0.64,-3.9,False,False,False,0.277,False,False,False,False,False,Supertrend hijau
+MBSS,4400.0,1,False,3.14,51.7,True,True,False,0.529,True,False,False,False,True,"Supertrend hijau | VOLUME SPIKE 3.1x | Harga naik 52% (5 hari) | CMF 0.53 + harga naik 51.7% + vol 3.1x | ⚠️ SUDAH MENTOK UPPER BB (overbought, hati-hati kejar)"
+MBTO,152.0,0,False,0.1,1.3,False,False,False,-0.222,False,False,False,False,False,-
+MDIA,154.0,0,False,0.93,-3.8,False,False,False,-0.295,False,False,False,False,False,MACD Histogram Divergence (rezim IHSG belum bullish)
+MDKA,2940.0,0,False,0.17,0.7,False,False,False,-0.044,False,False,False,False,False,-
+MEDC,1440.0,1,False,0.3,-1.4,False,False,False,-0.343,False,False,False,False,False,Supertrend BARU hijau
+MGNA,206.0,1,False,0.38,41.1,False,True,False,-0.234,False,False,False,False,False,Supertrend hijau | Harga naik 41% (5 hari)
+MIDI,256.0,1,False,0.14,-0.8,False,False,False,-0.081,False,False,False,False,False,Stoch golden cross | MACD Histogram Divergence (rezim IHSG belum bullish)
+MIKA,1700.0,0,False,0.16,1.5,False,False,False,0.028,False,False,False,False,False,MACD Histogram Divergence (rezim IHSG belum bullish)
+MITI,372.0,1,False,2.97,36.8,False,True,False,0.266,True,False,False,False,True,"Supertrend hijau | Harga naik 37% (5 hari) | CMF 0.27 + harga naik 36.8% + vol 3.0x | ⚠️ SUDAH MENTOK UPPER BB (overbought, hati-hati kejar)"
+MLPT,955.0,0,False,0.32,-5.0,False,False,False,-0.26,False,False,False,False,False,-
+MNCN,127.0,0,False,0.72,-1.6,False,False,False,-0.446,False,False,False,False,False,-
+MPMX,1025.0,1,False,0.6,1.0,False,False,False,0.02,False,False,False,False,False,Stoch golden cross
+MYOR,1405.0,0,False,0.4,1.1,False,False,False,-0.239,False,False,False,False,False,-
+NISP,1245.0,1,False,0.34,-0.4,False,False,False,-0.114,False,False,False,False,False,Stoch golden cross
+NOBU,505.0,0,False,0.35,0.0,False,False,False,0.086,False,False,False,False,False,-
+NRCA,570.0,1,False,1.21,7.5,False,False,False,0.112,False,False,False,False,False,Supertrend BARU hijau
+PGAS,1425.0,1,False,0.29,-0.7,False,False,False,-0.281,False,False,False,False,False,Supertrend BARU hijau | MACD Histogram Divergence (rezim IHSG belum bullish)
+PKPK,6800.0,1,False,2.81,15.3,False,True,False,0.102,True,False,False,False,True,"Supertrend hijau | Harga naik 15% (5 hari) | CMF 0.10 + harga naik 15.3% + vol 2.8x | ⚠️ SUDAH MENTOK UPPER BB (overbought, hati-hati kejar)"
+PNBN,830.0,0,False,0.73,-1.2,False,False,False,-0.323,False,False,False,False,False,MACD Histogram Divergence (rezim IHSG belum bullish)
+PNLF,198.0,1,False,0.29,1.0,False,False,False,-0.743,False,False,False,False,False,Supertrend BARU hijau | MACD Histogram Divergence (rezim IHSG belum bullish)
+PSAB,525.0,1,False,0.88,-1.9,False,False,False,0.126,False,False,False,False,False,Stoch golden cross | MACD Histogram Divergence (rezim IHSG belum bullish)
+PSKT,236.0,1,False,0.15,1.7,False,False,False,-0.09,False,False,False,False,False,Supertrend hijau
+PTBA,3390.0,1,False,1.35,9.0,False,False,False,0.3,False,False,False,False,True,"Supertrend hijau | ⚠️ SUDAH MENTOK UPPER BB (overbought, hati-hati kejar)"
+PTRO,5175.0,1,False,0.52,-2.4,False,False,False,-0.203,False,False,False,False,False,Stoch golden cross
+PTSN,386.0,1,False,0.1,-1.0,False,False,False,0.251,False,False,False,False,False,Stoch golden cross
+PWON,270.0,1,False,0.94,3.8,False,False,False,-0.254,False,False,False,False,False,Supertrend BARU hijau
+PYFA,234.0,2,False,1.81,11.4,False,False,False,-0.345,False,False,False,False,False,Stoch golden cross | Supertrend BARU hijau
+RAJA,690.0,1,False,1.26,5.3,False,False,False,-0.387,False,False,False,False,False,Supertrend BARU hijau | MACD Histogram Divergence (rezim IHSG belum bullish)
+SCMA,181.0,1,False,0.4,5.8,False,False,False,-0.543,False,False,False,False,False,Supertrend hijau
+SDMU,70.0,0,False,0.13,6.1,False,False,False,-0.801,False,False,False,False,False,-
+SIDO,352.0,1,False,0.58,1.1,False,False,False,-0.215,False,False,False,False,False,Supertrend hijau
+SILO,1945.0,0,False,0.61,-3.2,False,False,False,-0.216,False,False,False,False,False,MACD Histogram Divergence (rezim IHSG belum bullish)
+SIMP,580.0,1,False,0.41,1.8,False,False,False,-0.126,False,False,False,False,False,Supertrend BARU hijau | MACD Histogram Divergence (rezim IHSG belum bullish)
+SMAR,8850.0,1,False,0.84,28.7,False,True,False,0.142,False,False,False,False,True,"Supertrend hijau | Harga naik 29% (5 hari) | ⚠️ SUDAH MENTOK UPPER BB (overbought, hati-hati kejar)"
+SMDR,426.0,1,False,2.29,8.7,False,False,False,0.039,False,False,False,False,True,"Supertrend hijau | ⚠️ SUDAH MENTOK UPPER BB (overbought, hati-hati kejar)"
+SMGR,1530.0,1,False,0.52,-1.0,False,False,False,-0.364,False,False,False,False,False,Supertrend BARU hijau | MACD Histogram Divergence (rezim IHSG belum bullish)
+SMMT,3350.0,0,False,0.5,-4.0,False,False,False,0.178,False,False,False,False,False,-
+SMRA,240.0,0,False,0.28,-2.4,False,False,False,-0.664,False,False,False,False,False,MACD Histogram Divergence (rezim IHSG belum bullish)
+SMSM,1700.0,1,False,0.63,1.5,False,False,False,-0.095,False,False,False,False,False,Supertrend BARU hijau
+SOCI,620.0,1,False,0.29,0.8,False,False,False,-0.192,False,False,False,False,False,Supertrend hijau
+SQMI,97.0,1,False,0.47,5.4,False,False,False,-0.127,False,False,False,False,False,Supertrend hijau
+SRSN,140.0,1,False,0.81,11.1,False,False,False,-0.029,False,False,False,False,False,Supertrend hijau
+SRTG,1765.0,1,False,0.31,-1.7,False,False,False,-0.012,False,False,False,False,False,Stoch golden cross | MACD Histogram Divergence (rezim IHSG belum bullish)
+SSIA,1760.0,1,False,0.82,5.7,False,False,False,-0.224,False,False,False,False,False,Supertrend hijau
+SSMS,1060.0,0,False,0.72,-0.5,False,False,False,-0.071,False,False,False,False,False,-
+TINS,4670.0,0,False,0.39,1.1,False,False,False,-0.04,False,False,False,False,False,-
+TKIM,7375.0,1,False,0.46,2.4,False,False,False,-0.193,False,False,False,False,False,Supertrend BARU hijau
+TLKM,2270.0,0,False,0.77,-4.2,False,False,False,-0.082,False,False,False,False,False,-
+TMPO,170.0,1,False,0.32,0.0,False,False,False,-0.267,False,False,False,False,False,Stoch golden cross
+TOBA,478.0,0,False,0.57,1.7,False,False,False,-0.271,False,False,False,False,False,MACD Histogram Divergence (rezim IHSG belum bullish)
+TOTL,1515.0,0,False,0.54,-1.3,False,False,False,0.174,False,False,False,False,False,-
+TOWR,408.0,1,False,0.58,4.1,False,False,False,-0.152,False,False,False,False,False,Supertrend hijau
+TPIA,1765.0,0,False,0.75,2.6,False,False,False,-0.335,False,False,False,False,False,MACD Histogram Divergence (rezim IHSG belum bullish)
+ULTJ,2070.0,1,False,0.42,2.5,False,False,False,0.029,False,False,False,False,False,Supertrend hijau
+UNTR,26000.0,0,False,0.44,3.3,False,False,False,-0.229,False,False,False,False,False,-
+UNVR,1600.0,1,False,0.93,-2.1,False,False,False,-0.193,False,False,False,False,False,Stoch golden cross | MACD Histogram Divergence (rezim IHSG belum bullish)
+WIIM,1535.0,1,False,0.62,2.7,False,False,False,-0.294,False,False,False,False,False,Supertrend BARU hijau
+DPUM,117.0,0,False,0.38,6.4,False,False,False,-0.075,False,False,False,False,False,-
+JGLE,51.0,0,False,0.69,2.0,False,False,False,-0.285,False,False,False,False,False,MACD Histogram Divergence (rezim IHSG belum bullish)
+OASA,252.0,0,False,0.41,0.8,False,False,False,-0.133,False,False,False,False,False,MACD Histogram Divergence (rezim IHSG belum bullish)
+POWR,965.0,1,False,0.16,4.9,False,False,False,0.191,False,False,False,False,False,Supertrend hijau
+PRDA,2950.0,1,False,2.29,5.7,False,False,False,0.369,True,False,False,False,True,"Supertrend hijau | CMF 0.37 + harga naik 5.7% + vol 2.3x | ⚠️ SUDAH MENTOK UPPER BB (overbought, hati-hati kejar)"
+BRIS,1410.0,0,False,0.94,-6.9,False,False,False,-0.256,False,False,False,False,False,MACD Histogram Divergence (rezim IHSG belum bullish)
+MINA,222.0,1,False,0.93,7.8,False,False,False,-0.195,False,False,False,False,False,Supertrend hijau | MACD Histogram Divergence (rezim IHSG belum bullish)
+CLEO,424.0,1,False,1.01,3.4,False,False,False,-0.064,False,False,False,False,False,Supertrend hijau
+FIRE,110.0,0,False,0.22,1.9,False,False,False,-0.304,False,False,False,False,False,-
+HRTA,2190.0,2,False,0.39,0.5,False,False,False,-0.029,False,False,False,False,False,Stoch golden cross | Supertrend hijau
+MARK,1205.0,1,False,0.59,1.3,False,False,False,0.106,False,False,False,False,False,Supertrend hijau
+BELL,98.0,0,False,0.07,5.4,False,False,False,-0.708,False,False,False,False,False,MACD Histogram Divergence (rezim IHSG belum bullish)
+KIOS,83.0,1,False,0.24,13.7,False,False,False,-0.51,False,False,False,False,False,Supertrend hijau
+GMFI,52.0,1,False,1.28,0.0,False,False,False,0.244,False,False,False,False,False,Stoch golden cross
+PPRE,92.0,1,False,0.36,-1.1,False,False,False,-0.104,False,False,False,False,False,Supertrend hijau
+DFAM,71.0,1,False,0.18,-2.7,False,False,False,-0.082,False,False,False,False,False,Stoch golden cross
+BTPS,960.0,1,False,0.4,1.6,False,False,False,-0.571,False,False,False,False,False,Supertrend BARU hijau | MACD Histogram Divergence (rezim IHSG belum bullish)
+HEAL,610.0,1,False,0.67,-0.8,False,False,False,-0.183,False,False,False,False,False,Supertrend hijau
+TUGU,1515.0,1,False,0.37,0.3,False,False,False,0.156,False,False,False,False,False,Supertrend hijau
+MSIN,184.0,0,False,0.33,-10.7,False,False,False,-0.266,False,False,False,False,False,-
+MAPA,650.0,0,False,0.11,0.0,False,False,False,-0.204,False,False,False,False,False,-
+TCPI,1315.0,0,False,1.02,-23.8,False,False,False,-0.334,False,False,False,False,False,-
+RISE,600.0,0,False,0.24,-0.8,False,False,False,-0.47,False,False,False,False,False,-
+MGRO,715.0,1,False,0.77,-2.7,False,False,False,0.391,False,False,False,False,False,Supertrend hijau
+FILM,610.0,0,False,0.3,-2.4,False,False,False,-0.383,False,False,False,False,False,-
+LAND,56.0,0,False,0.21,5.7,False,False,False,0.084,False,False,False,False,False,-
+MOLI,422.0,1,False,0.48,9.3,False,False,False,0.089,False,False,False,False,False,Supertrend hijau
+PANI,4740.0,1,False,0.59,2.6,False,False,False,-0.343,False,False,False,False,False,Supertrend hijau | MACD Histogram Divergence (rezim IHSG belum bullish)
+SAPX,440.0,1,False,0.19,35.8,False,True,False,0.073,False,False,False,False,False,Supertrend hijau | Harga naik 36% (5 hari)
+YELO,81.0,1,False,0.4,12.5,False,False,False,-0.151,False,False,False,False,False,Supertrend hijau | MACD Histogram Divergence (rezim IHSG belum bullish)
+POLA,107.0,1,False,2.5,46.6,False,True,False,-0.397,False,False,False,False,True,"Supertrend hijau | Harga naik 47% (5 hari) | ⚠️ SUDAH MENTOK UPPER BB (overbought, hati-hati kejar)"
+DIVA,138.0,1,False,0.33,13.1,False,False,False,-0.485,False,False,False,False,False,Supertrend hijau
+COCO,133.0,1,False,0.9,31.7,False,True,False,-0.024,False,False,False,False,False,Supertrend hijau | Harga naik 32% (5 hari)
+CCSI,420.0,1,False,0.38,39.1,False,True,False,-0.073,False,False,False,False,False,Supertrend hijau | Harga naik 39% (5 hari)
+KJEN,150.0,1,False,0.11,-9.6,False,False,False,-0.473,False,False,False,False,False,Stoch golden cross
+KOTA,152.0,1,False,1.36,-11.6,False,False,False,-0.269,False,False,False,False,False,Stoch golden cross | MACD Histogram Divergence (rezim IHSG belum bullish)
+KEEN,850.0,1,False,0.63,0.0,False,False,False,-0.106,False,False,False,False,False,Stoch golden cross
+NZIA,155.0,0,False,0.17,5.4,False,False,False,-0.488,False,False,False,False,False,MACD Histogram Divergence (rezim IHSG belum bullish)
+SLIS,77.0,1,False,0.58,6.9,False,False,False,-0.053,False,False,False,False,False,Supertrend BARU hijau | MACD Histogram Divergence (rezim IHSG belum bullish)
+ESIP,100.0,1,False,0.26,5.3,False,False,False,-0.522,False,False,False,False,False,Supertrend BARU hijau
+TEBE,2690.0,1,False,0.0,23.4,False,True,False,0.064,False,False,False,False,False,Supertrend hijau | Harga naik 23% (5 hari)
+AGAR,2060.0,1,False,1.09,20.8,False,True,False,0.179,False,False,False,False,False,Supertrend BARU hijau | Harga naik 21% (5 hari)
+INDO,172.0,1,False,0.67,2.4,False,False,False,-0.053,False,False,False,False,False,Supertrend hijau
+TRIN,292.0,1,False,1.09,18.7,False,True,False,-0.174,False,False,False,False,False,Supertrend BARU hijau | Harga naik 19% (5 hari)
+CSMI,498.0,1,False,1.05,107.5,False,True,False,0.347,False,False,False,False,True,"Supertrend hijau | Harga naik 108% (5 hari) | ⚠️ SUDAH MENTOK UPPER BB (overbought, hati-hati kejar)"
+BBSS,93.0,1,False,0.08,-7.9,False,False,False,-0.157,False,False,False,False,False,Supertrend hijau
+UANG,3650.0,0,False,0.13,-0.5,False,False,False,-0.293,False,False,False,False,False,-
+SOFA,224.0,1,False,2.72,-30.4,False,False,False,-0.153,False,False,False,False,False,Di lower BB (-6.3%)
+SGER,775.0,1,False,1.41,5.4,False,False,False,0.33,False,False,False,False,True,"Supertrend hijau | ⚠️ SUDAH MENTOK UPPER BB (overbought, hati-hati kejar)"
+ENZO,64.0,1,False,0.62,12.3,False,False,False,-0.106,False,False,False,False,False,Supertrend BARU hijau
+VICI,1050.0,1,False,0.38,10.5,False,False,False,0.125,False,False,False,False,False,Supertrend hijau
+SNLK,234.0,0,False,0.73,0.9,False,False,False,0.213,False,False,False,False,False,-
+TAPG,2010.0,1,False,0.46,3.6,False,False,False,-0.025,False,False,False,False,False,Supertrend BARU hijau | MACD Histogram Divergence (rezim IHSG belum bullish)
+LUCY,220.0,0,False,0.65,-22.0,False,False,False,-0.206,False,False,False,False,False,-
+HOPE,272.0,0,False,0.47,0.7,False,False,False,0.104,False,False,False,False,False,-
+MGLV,14025.0,0,False,0.65,-4.3,False,False,False,-0.036,False,False,False,False,False,-
+TRUE,62.0,1,False,1.91,29.2,False,True,False,-0.042,False,False,False,False,False,Supertrend BARU hijau | Harga naik 29% (5 hari)
+LABA,113.0,1,False,0.24,11.9,False,False,False,-0.177,False,False,False,False,False,Supertrend BARU hijau
+ARCI,1270.0,1,False,0.47,3.7,False,False,False,0.06,False,False,False,False,False,Supertrend hijau
+NICL,376.0,1,False,0.95,3.4,False,False,False,-0.18,False,False,False,False,False,Supertrend BARU hijau
+UVCR,282.0,1,False,0.49,9.3,False,False,False,0.423,False,False,False,False,False,Supertrend hijau
+BUKA,103.0,0,False,0.42,-1.0,False,False,False,-0.161,False,False,False,False,False,-
+OILS,310.0,1,False,0.61,7.6,False,False,False,-0.314,False,False,False,False,False,Supertrend BARU hijau
+GPSO,222.0,0,False,0.23,-3.5,False,False,False,-0.155,False,False,False,False,False,-
+CMNT,730.0,1,False,0.77,-2.0,False,False,False,-0.0,False,False,False,False,False,Di lower BB (0.3%)
+GTSI,136.0,1,False,1.08,1.5,False,False,False,-0.049,False,False,False,False,False,Stoch golden cross | MACD Histogram Divergence (rezim IHSG belum bullish)
+KUAS,91.0,1,False,0.18,-7.1,False,False,False,-0.463,False,False,False,False,False,Supertrend hijau
+MTEL,450.0,0,False,0.17,-2.2,False,False,False,-0.077,False,False,False,False,False,-
+CMRY,4430.0,0,False,0.14,2.3,False,False,False,-0.288,False,False,False,False,False,MACD Histogram Divergence (rezim IHSG belum bullish)
+WGSH,107.0,1,False,0.19,3.9,False,False,False,-0.219,False,False,False,False,False,Stoch golden cross | MACD Histogram Divergence (rezim IHSG belum bullish)
+ADMR,1500.0,1,False,0.47,0.7,False,False,False,-0.194,False,False,False,False,False,Supertrend BARU hijau | MACD Histogram Divergence (rezim IHSG belum bullish)
+SEMA,462.0,1,False,0.46,12.1,False,False,False,0.245,False,False,False,False,False,Stoch golden cross
+STAA,1250.0,1,False,0.56,3.7,False,False,False,0.01,False,False,False,False,False,Supertrend hijau
+WIRG,60.0,0,False,0.16,3.4,False,False,False,-0.158,False,False,False,False,False,MACD Histogram Divergence (rezim IHSG belum bullish)
+ARKO,2890.0,1,False,0.48,-9.1,False,False,False,-0.294,False,False,False,False,False,Stoch golden cross
+DEWI,256.0,1,False,0.25,14.3,False,False,False,0.407,False,False,False,False,False,Supertrend hijau
+HATM,530.0,1,False,0.59,-1.9,False,False,False,0.49,False,False,False,False,False,Stoch golden cross | MACD Histogram Divergence (rezim IHSG belum bullish)
+GULA,800.0,1,False,0.94,2.6,False,False,False,0.169,False,False,False,False,False,Supertrend BARU hijau
+JARR,3510.0,0,False,0.32,4.8,False,False,False,-0.243,False,False,False,False,False,-
+EURO,1400.0,1,False,0.02,1.4,False,False,False,0.325,False,False,False,False,False,Supertrend hijau
+TOOL,56.0,0,False,0.11,1.8,False,False,False,-0.593,False,False,False,False,False,-
+MEDS,79.0,1,False,1.2,11.3,False,False,False,-0.473,False,False,False,False,False,Supertrend BARU hijau
+KDTN,660.0,1,False,4.14,71.0,True,True,False,0.375,True,False,False,False,True,"Supertrend hijau | VOLUME SPIKE 4.1x | Harga naik 71% (5 hari) | CMF 0.37 + harga naik 71.0% + vol 4.1x | ⚠️ SUDAH MENTOK UPPER BB (overbought, hati-hati kejar)"
+ZATA,54.0,0,False,0.25,3.8,False,False,False,-0.231,False,False,False,False,False,MACD Histogram Divergence (rezim IHSG belum bullish)
+MMIX,955.0,2,False,1.09,6.1,False,False,False,0.251,False,False,False,False,True,"Stoch golden cross | Supertrend hijau | ⚠️ SUDAH MENTOK UPPER BB (overbought, hati-hati kejar)"
+PADA,172.0,0,False,0.54,6.2,False,False,False,-0.184,False,False,False,False,False,MACD Histogram Divergence (rezim IHSG belum bullish)
+ELIT,288.0,1,False,1.25,18.0,False,True,False,0.081,False,False,False,False,False,Supertrend hijau | Harga naik 18% (5 hari)
+CBRE,740.0,0,False,0.49,-2.0,False,False,False,-0.007,False,False,False,False,False,-
+NAYZ,88.0,1,False,3.2,27.5,True,True,False,0.417,True,False,False,False,True,"Supertrend hijau | VOLUME SPIKE 3.2x | Harga naik 28% (5 hari) | CMF 0.42 + harga naik 27.5% + vol 3.2x | ⚠️ SUDAH MENTOK UPPER BB (overbought, hati-hati kejar)"
+IRSX,328.0,0,False,0.7,-5.7,False,False,False,-0.147,False,False,False,False,False,-
+PACK,496.0,1,False,1.82,-6.4,False,False,False,-0.2,False,False,False,False,False,Supertrend BARU hijau
+VAST,105.0,0,False,0.11,4.0,False,False,False,0.09,False,False,False,False,False,-
+KING,400.0,1,False,0.73,22.7,False,True,False,-0.113,False,False,False,False,False,Supertrend hijau | Harga naik 23% (5 hari)
+PGEO,1000.0,1,False,0.66,1.5,False,False,False,0.058,False,False,False,False,False,Supertrend BARU hijau
+FUTR,280.0,2,False,1.4,7.7,False,False,False,0.027,False,False,False,False,False,Stoch golden cross | Supertrend BARU hijau
+BDKR,204.0,2,False,4.07,19.3,True,True,False,0.607,True,False,False,False,True,"Stoch golden cross | Supertrend hijau | VOLUME SPIKE 4.1x | Harga naik 19% (5 hari) | CMF 0.61 + harga naik 19.3% + vol 4.1x | ⚠️ SUDAH MENTOK UPPER BB (overbought, hati-hati kejar)"
+TRON,81.0,0,False,0.33,3.8,False,False,False,-0.301,False,False,False,False,False,-
+CUAN,865.0,1,False,0.55,-2.3,False,False,False,-0.085,False,False,False,False,False,Stoch golden cross
+NSSS,765.0,1,False,1.01,11.7,False,False,False,0.092,False,False,False,False,False,Supertrend hijau
+JATI,111.0,1,False,0.53,3.7,False,False,False,0.098,False,False,False,False,False,Supertrend hijau
+MPXL,262.0,1,False,1.53,4.8,False,False,False,0.094,False,False,False,False,False,Supertrend hijau
+SMIL,472.0,2,False,0.97,7.3,False,False,False,0.188,False,False,False,False,True,"Stoch golden cross | Supertrend hijau | ⚠️ SUDAH MENTOK UPPER BB (overbought, hati-hati kejar)"
+VKTR,845.0,1,False,0.84,1.8,False,False,False,-0.069,False,False,False,False,False,Supertrend hijau
+AMMN,4510.0,2,False,0.8,0.7,False,False,False,-0.033,False,False,False,False,False,Stoch golden cross | Supertrend BARU hijau
+INET,274.0,0,False,0.54,-2.8,False,False,False,-0.142,False,False,False,False,False,-
+MAHA,140.0,0,False,0.24,2.9,False,False,False,-0.494,False,False,False,False,False,-
+RMKO,278.0,2,False,0.47,-5.4,False,False,False,-0.178,False,False,False,False,False,Stoch golden cross | Supertrend hijau
+FOLK,191.0,0,False,1.24,0.5,False,False,False,0.0,False,False,False,False,False,-
+PPRI,176.0,1,False,2.95,24.8,False,True,False,-0.075,False,False,False,False,False,Supertrend hijau | Harga naik 25% (5 hari)
+CYBR,490.0,1,False,1.03,-2.0,False,False,False,-0.008,False,False,False,False,False,Supertrend hijau
+MUTU,135.0,1,False,1.19,14.4,False,False,False,-0.018,False,False,False,False,False,Supertrend hijau
+HUMI,126.0,1,False,0.64,8.6,False,False,False,0.091,False,False,False,False,False,Supertrend hijau
+RSCH,570.0,1,False,0.62,10.7,False,False,False,0.542,False,False,False,False,False,Supertrend hijau
+KOCI,109.0,1,False,0.22,12.4,False,False,False,-0.402,False,False,False,False,False,Supertrend hijau
+BREN,2940.0,0,False,0.51,0.7,False,False,False,-0.199,False,False,False,False,False,MACD Histogram Divergence (rezim IHSG belum bullish)
+KOKA,155.0,0,False,0.15,-1.3,False,False,False,0.005,False,False,False,False,False,-
+UDNG,422.0,0,False,0.33,-12.4,False,False,False,-0.344,False,False,False,False,False,-
+RGAS,94.0,0,False,1.35,2.2,False,False,False,-0.187,False,False,False,False,False,-
+AYAM,520.0,1,False,0.87,4.4,False,False,False,0.442,False,False,False,False,True,"Supertrend hijau | ⚠️ SUDAH MENTOK UPPER BB (overbought, hati-hati kejar)"
+ASLI,500.0,1,False,2.15,2.9,False,False,False,0.028,False,False,False,False,False,Supertrend hijau
+GRPH,106.0,1,False,1.01,0.0,False,False,False,-0.218,False,False,False,False,False,Stoch golden cross
+TOSK,82.0,1,False,0.35,9.3,False,False,False,-0.026,False,False,False,False,False,Supertrend hijau
+MPIX,216.0,1,False,0.34,15.5,False,True,False,0.252,False,False,False,False,False,Supertrend hijau | Harga naik 16% (5 hari)
+MEJA,149.0,1,False,2.02,4.9,False,False,False,0.347,True,False,False,False,False,Supertrend BARU hijau | CMF 0.35 + harga naik 4.9% + vol 2.0x
+BAIK,236.0,0,False,0.18,-3.3,False,False,False,-0.282,False,False,False,False,False,-
+VISI,1060.0,1,False,0.25,-12.8,False,False,False,-0.002,False,False,False,False,False,Stoch golden cross
+DATA,1610.0,1,False,0.45,3.9,False,False,False,-0.323,False,False,False,False,False,Stoch golden cross
+PART,126.0,1,False,0.99,9.6,False,False,False,-0.028,False,False,False,False,True,"Supertrend hijau | ⚠️ SUDAH MENTOK UPPER BB (overbought, hati-hati kejar)"
+BLES,200.0,1,False,0.92,4.2,False,False,False,0.013,False,False,False,False,False,Supertrend hijau
+NEST,855.0,1,False,3.08,9.6,True,False,False,0.453,True,False,False,False,True,"Supertrend hijau | VOLUME SPIKE 3.1x | CMF 0.45 + harga naik 9.6% + vol 3.1x | ⚠️ SUDAH MENTOK UPPER BB (overbought, hati-hati kejar)"
+VERN,190.0,2,False,1.2,-19.5,False,False,False,0.216,False,False,False,False,False,Stoch golden cross | Supertrend BARU hijau
+AADI,12175.0,1,False,0.64,10.2,False,False,False,0.043,False,False,False,False,False,Supertrend hijau
+RATU,4220.0,1,False,0.46,1.7,False,False,False,-0.319,False,False,False,False,False,Supertrend hijau
+DGWG,330.0,1,False,0.94,1.9,False,False,False,0.001,False,False,False,False,False,Supertrend BARU hijau
+CBDK,3530.0,1,False,0.29,2.9,False,False,False,-0.266,False,False,False,False,False,Supertrend hijau | MACD Histogram Divergence (rezim IHSG belum bullish)
+ASPR,146.0,1,False,0.44,1.4,False,False,False,0.088,False,False,False,False,False,Supertrend hijau
+COIN,735.0,0,False,0.21,-2.6,False,False,False,0.097,False,False,False,False,False,-
+CDIA,585.0,0,False,0.75,3.8,False,False,False,-0.319,False,False,False,False,False,MACD Histogram Divergence (rezim IHSG belum bullish)
+KAQI,83.0,0,False,0.61,0.0,False,False,False,-0.033,False,False,False,False,False,-
+FORE,795.0,0,False,0.24,-0.6,False,False,False,0.065,False,False,False,False,False,MACD Histogram Divergence (rezim IHSG belum bullish)
+AYLS,200.0,1,False,1.26,-2.0,False,False,False,-0.16,False,False,False,False,False,Stoch golden cross
+ASPI,980.0,1,False,0.0,44.1,False,True,False,0.254,False,False,False,False,False,Supertrend hijau | Harga naik 44% (5 hari)
+CARE,374.0,0,False,0.0,1.1,False,False,False,0.384,False,False,False,False,False,MACD Histogram Divergence (rezim IHSG belum bullish)
+PIPA,154.0,0,False,0.53,7.7,False,False,False,-0.403,False,False,False,False,False,MACD Histogram Divergence (rezim IHSG belum bullish)
+NCKL,865.0,0,False,0.46,-0.6,False,False,False,-0.124,False,False,False,False,False,-
+MBMA,494.0,1,False,0.49,-1.2,False,False,False,-0.1,False,False,False,False,False,Supertrend BARU hijau
+DOOH,350.0,0,False,0.3,-2.2,False,False,False,-0.311,False,False,False,False,False,-
+MSJA,850.0,1,False,0.88,2.4,False,False,False,0.026,False,False,False,False,False,Supertrend hijau
+SMLE,318.0,1,False,1.58,22.3,False,True,False,0.467,True,False,False,False,False,Supertrend hijau | Harga naik 22% (5 hari) | CMF 0.47 + harga naik 22.3% + vol 1.6x
+WIFI,1450.0,0,False,0.79,-13.9,False,False,False,-0.384,False,False,False,False,False,-
+KETR,915.0,1,False,0.87,-7.6,False,False,False,-0.016,False,False,False,False,False,Supertrend hijau
+EMAS,7675.0,1,False,0.34,1.7,False,False,False,-0.026,False,False,False,False,False,Supertrend hijau
+SUPA,488.0,2,False,0.71,-0.4,False,False,False,0.243,False,False,False,False,False,Stoch golden cross | Supertrend hijau
+WBSA,610.0,1,False,1.01,-1.6,False,False,False,0.024,False,False,False,False,False,Stoch golden cross | MACD Histogram Divergence (rezim IHSG belum bullish)
+JECX,1485.0,1,False,0.63,6.8,False,False,False,0.426,False,False,False,False,False,Supertrend hijau
+JELI,422.0,0,False,0.68,1.9,False,False,False,-0.302,False,False,False,False,False,-
+EMMI,392.0,0,False,0.6,-11.7,False,False,False,0.454,False,False,False,False,False,-
+BACH,368.0,1,False,0.51,3.4,False,False,False,-0.264,False,False,False,False,False,Supertrend hijau
+PRDL,183.0,1,False,1.53,1.7,False,False,False,-0.373,False,False,False,False,False,Supertrend hijau | MACD Histogram Divergence (rezim IHSG belum bullish)
+RANS,182.0,1,False,0.53,-5.7,False,False,False,-0.072,False,False,False,False,False,Stoch golden cross
+RMKE,346.0,0,False,0.67,-4.9,False,False,False,-0.222,False,False,False,False,False,-
+AVIA,344.0,1,False,0.98,3.6,False,False,False,-0.247,False,False,False,False,False,Supertrend hijau
+NASI,177.0,0,False,0.17,5.4,False,False,False,-0.162,False,False,False,False,False,-
+BSML,550.0,0,False,0.88,1.9,False,False,False,0.273,False,False,False,False,False,-
+ADRO,2600.0,1,False,0.58,5.3,False,False,False,-0.207,False,False,False,False,False,Supertrend hijau | MACD Histogram Divergence (rezim IHSG belum bullish)
+AHAP,96.0,0,False,0.24,3.2,False,False,False,-0.258,False,False,False,False,False,-
